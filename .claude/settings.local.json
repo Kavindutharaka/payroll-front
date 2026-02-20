@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(node -e:*)",
+      "Bash(ls \"D:\\\\Dev\\\\testing_fog\\\\front-end\\\\node_modules\\\\flowbite-react\\\\dist\\\\plugin\"\" 2>/dev/null || echo \"dir not found\" ls \"D:Devtesting_fogfront-endnode_modulesflowbite-reactdist\"\")"
+    ]
+  }
+}
