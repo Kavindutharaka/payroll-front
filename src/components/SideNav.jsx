@@ -41,7 +41,7 @@ export function SideNav() {
                   Products
                 </SidebarItem>
                 <SidebarCollapse icon={HiUsers} label="Employee Master">
-                  <SidebarItem href="/employee-master/employees" icon={HiIdentification}>
+                  <SidebarItem href="/emp/manage" icon={HiIdentification}>
                     Employee
                   </SidebarItem>
                   <SidebarItem href="/emp/pos" icon={HiViewList}>
