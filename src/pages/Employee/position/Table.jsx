@@ -1,17 +1,9 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeadCell,
-  TableRow,
-  Button,
-  Badge,
-  TextInput,
-} from "flowbite-react";
 import { useState } from "react";
-import { HiPlus, HiSearch, HiPencil, HiTrash } from "react-icons/hi";
+import { StatusBadge } from "../../../components/StatusBadge";
+import { HiPlus, HiPencil } from "react-icons/hi";
 import LevelForm from "./PositionForm";
+import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
+import { CustomButton } from "../../../components/FormFields";
 
 const levels = [
   { id: 1, name: "Junior", description: "Entry-level employees with 0–2 years of experience" },
@@ -42,10 +34,10 @@ export function PositionTable() {
             Manage and organize your employee positions
           </p>
         </div>
-        <Button onClick={openForm} color="purple">
+        <CustomButton onClick={openForm} color="purple">
           <HiPlus className="mr-2 h-4 w-4" />
           Add Position
-        </Button>
+        </CustomButton>
       </div>
 
       {/* Table Card */}
@@ -53,41 +45,41 @@ export function PositionTable() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <Table hoverable>
-            <TableHead>
-              <TableRow>
-                <TableHeadCell className="w-10">#</TableHeadCell>
-                <TableHeadCell>Position Name</TableHeadCell>
-                <TableHeadCell>Description</TableHeadCell>
-                <TableHeadCell className="text-center">Actions</TableHeadCell>
-              </TableRow>
-            </TableHead>
-            <TableBody className="divide-y divide-gray-100 dark:divide-gray-700">
+          <CustomTable hoverable>
+            <CustomTableHead>
+              <CustomTableRow>
+                <CustomTableHeadCell className="w-10">#</CustomTableHeadCell>
+                <CustomTableHeadCell>Position Name</CustomTableHeadCell>
+                <CustomTableHeadCell>Description</CustomTableHeadCell>
+                <CustomTableHeadCell className="text-center">Actions</CustomTableHeadCell>
+              </CustomTableRow>
+            </CustomTableHead>
+            <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
               {levels.map((level) => (
-                <TableRow
+                <CustomTableRow
                   key={level.id}
                   className="bg-white transition-colors hover:bg-purple-50 dark:bg-gray-800 dark:hover:bg-gray-700"
                 >
-                  <TableCell className="text-sm text-gray-400">{level.id}</TableCell>
-                  <TableCell>
-                    <Badge color="purple" className="w-fit px-3 py-1 text-sm font-medium">
+                  <CustomTableCell className="text-sm text-gray-400">{level.id}</CustomTableCell>
+                  <CustomTableCell>
+                    <StatusBadge color="purple" className="w-fit px-3 py-1 text-sm font-medium">
                       {level.name}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-600 dark:text-gray-300">
+                    </StatusBadge>
+                  </CustomTableCell>
+                  <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">
                     {level.description}
-                  </TableCell>
-                  <TableCell>
+                  </CustomTableCell>
+                  <CustomTableCell>
                     <div className="flex items-center justify-center gap-2">
-                      <Button size="xs" color="blue" outline pill>
+                      <CustomButton size="xs" color="blue" outline pill>
                         <HiPencil className="h-3.5 w-3.5" />
-                      </Button>
+                      </CustomButton>
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </CustomTableCell>
+                </CustomTableRow>
               ))}
-            </TableBody>
-          </Table>
+            </CustomTableBody>
+          </CustomTable>
         </div>
 
         {/* Card Footer */}

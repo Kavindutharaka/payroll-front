@@ -1,5 +1,5 @@
-import { Button, Label, TextInput, Textarea } from "flowbite-react";
-import { HiX, HiTag, HiDocumentText } from "react-icons/hi";
+import { HiX, HiTag } from "react-icons/hi";
+import { CustomLabel, CustomInput, CustomTextarea, CustomButton } from "../../../components/FormFields";
 
 export default function LevelForm({ closeForm }) {
   return (
@@ -29,8 +29,8 @@ export default function LevelForm({ closeForm }) {
 
           {/* Level Name */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="level1" value="Level Name" />
-            <TextInput
+            <CustomLabel htmlFor="level1">Level Name</CustomLabel>
+            <CustomInput
               id="level1"
               type="text"
               icon={HiTag}
@@ -42,8 +42,8 @@ export default function LevelForm({ closeForm }) {
 
           {/* Description */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="des1" value="Description" />
-            <Textarea
+            <CustomLabel htmlFor="des1">Description</CustomLabel>
+            <CustomTextarea
               id="des1"
               placeholder="Briefly describe this level's responsibilities…"
               rows={3}
@@ -54,12 +54,12 @@ export default function LevelForm({ closeForm }) {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 border-t border-gray-100 pt-4 dark:border-gray-700">
-            <Button color="gray" type="button" onClick={closeForm}>
+            <CustomButton color="gray" type="button" onClick={closeForm}>
               Cancel
-            </Button>
-            <Button color="purple" type="submit">
+            </CustomButton>
+            <CustomButton color="purple" type="submit">
               Save Level
-            </Button>
+            </CustomButton>
           </div>
 
         </form>

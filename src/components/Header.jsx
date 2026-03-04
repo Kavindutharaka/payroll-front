@@ -10,9 +10,9 @@ import {
   SidebarItem,
   SidebarItemGroup,
   SidebarItems,
-  TextInput,
 } from "flowbite-react";
 import { useState } from "react";
+import { CustomInput } from "./FormFields";
 import {
   HiChartPie,
   HiClipboard,
@@ -32,9 +32,6 @@ export function Component() {
 
   return (
     <>
-      {/* <div className="flex min-h-[50vh] items-center justify-center">
-        <Button onClick={() => setIsOpen(true)}>Show navigation</Button>
-      </div> */}
       <Drawer open={isOpen} onClose={handleClose}>
         <DrawerHeader title="MENU" titleIcon={() => <></>} />
         <DrawerItems>
@@ -45,7 +42,7 @@ export function Component() {
             <div className="flex h-full flex-col justify-between py-2">
               <div>
                 <form className="pb-3 md:hidden">
-                  <TextInput icon={HiSearch} type="search" placeholder="Search" required size={32} />
+                  <CustomInput icon={HiSearch} type="search" placeholder="Search" required />
                 </form>
                 <SidebarItems>
                   <SidebarItemGroup>
