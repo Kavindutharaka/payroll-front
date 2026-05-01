@@ -1,45 +1,57 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StatusBadge } from "../../../components/StatusBadge";
-import Layout from "../../../components/Layout";import { HiPlus, HiPencil, HiArchive, HiSearch } from "react-icons/hi";
+import Layout from "../../../components/Layout";
+import { HiPlus, HiPencil, HiTrash, HiSearch } from "react-icons/hi";
 import ComponentForm from "./ComponentForm";
 import { CustomInput, CustomButton } from "../../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
+import { fetchSalaryComponents, createSalaryComponent, updateSalaryComponent, archiveSalaryComponent } from "../../../services/salaryComponentService";
 
-const components = [
-  { id: 1, name: "Transport Allowance", type: "Allowance", calcType: "Fixed Amount",        defaultValue: 5000,  taxable: false, epfApplicable: false, etfApplicable: false, mandatory: true,  status: "Active" },
-  { id: 2, name: "Mobile Allowance",    type: "Allowance", calcType: "Fixed Amount",        defaultValue: 2000,  taxable: false, epfApplicable: false, etfApplicable: false, mandatory: false, status: "Active" },
-  { id: 3, name: "Attendance Bonus",    type: "Allowance", calcType: "Percentage of Basic", defaultValue: 5,     taxable: true,  epfApplicable: true,  etfApplicable: true,  mandatory: false, status: "Active" },
-  { id: 4, name: "Risk Allowance",      type: "Allowance", calcType: "Percentage of Basic", defaultValue: 10,    taxable: true,  epfApplicable: true,  etfApplicable: true,  mandatory: false, status: "Active" },
-  { id: 5, name: "Research Allowance",  type: "Allowance", calcType: "Fixed Amount",        defaultValue: 15000, taxable: true,  epfApplicable: false, etfApplicable: false, mandatory: false, status: "Active" },
-  { id: 6, name: "NOPAY Deduction",     type: "Deduction", calcType: "Formula Based",       defaultValue: 0,     taxable: false, epfApplicable: false, etfApplicable: false, mandatory: true,  status: "Active" },
-  { id: 7, name: "Mobile Deduction",    type: "Deduction", calcType: "Fixed Amount",        defaultValue: 1500,  taxable: false, epfApplicable: false, etfApplicable: false, mandatory: false, status: "Active" },
-];
-
-const typeColor  = { Allowance: "success", Deduction: "failure" };
-const boolBadge  = (v) => <StatusBadge color={v ? "success" : "gray"} className="w-fit text-xs">{v ? "Yes" : "No"}</StatusBadge>;
+const typeColor = { Allowance: "success", Deduction: "failure" };
+const boolBadge = (v) => <StatusBadge color={v ? "success" : "gray"} className="w-fit text-xs">{v ? "Yes" : "No"}</StatusBadge>;
 
 export default function SalaryComponents() {
-  const [showForm, setShowForm] = useState(false);
-  const [editData, setEditData] = useState(null);
-  const [search, setSearch]     = useState("");
+  const [components, setComponents] = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [showForm, setShowForm]     = useState(false);
+  const [editData, setEditData]     = useState(null);
+  const [search, setSearch]         = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    try { setComponents(Array.isArray(await fetchSalaryComponents()) ? await fetchSalaryComponents() : []); }
+    catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleSave = async (form) => {
+    try {
+      if (editData) await updateSalaryComponent(editData.id, form);
+      else          await createSalaryComponent(form);
+      setShowForm(false); setEditData(null); load();
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Archive this salary component?")) return;
+    try { await archiveSalaryComponent(id); load(); } catch (err) { console.error(err); }
+  };
 
   const filtered = components.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
+    c.name?.toLowerCase().includes(search.toLowerCase())
   );
-
-  const handleEdit = (c) => { setEditData(c); setShowForm(true); };
-  const handleAdd  = ()   => { setEditData(null); setShowForm(true); };
 
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Salary Components</h1>
             <p className="mt-1 text-sm text-gray-500">Define dynamic allowances and deductions — no coding needed</p>
           </div>
-          <CustomButton color="purple" onClick={handleAdd}>
+          <CustomButton color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
             <HiPlus className="mr-2 h-4 w-4" /> Create Component
           </CustomButton>
         </div>
@@ -54,7 +66,6 @@ export default function SalaryComponents() {
             <CustomTable hoverable>
               <CustomTableHead>
                 <CustomTableRow>
-                  <CustomTableHeadCell>#</CustomTableHeadCell>
                   <CustomTableHeadCell>Component Name</CustomTableHeadCell>
                   <CustomTableHeadCell>Type</CustomTableHeadCell>
                   <CustomTableHeadCell>Calculation</CustomTableHeadCell>
@@ -67,14 +78,15 @@ export default function SalaryComponents() {
                 </CustomTableRow>
               </CustomTableHead>
               <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {filtered.map((c) => (
+                {loading ? (
+                  <CustomTableRow><CustomTableCell colSpan={9} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
+                ) : filtered.map((c) => (
                   <CustomTableRow key={c.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                    <CustomTableCell className="text-sm text-gray-400">{c.id}</CustomTableCell>
                     <CustomTableCell className="text-sm font-medium text-gray-800 dark:text-gray-200">{c.name}</CustomTableCell>
                     <CustomTableCell><StatusBadge color={typeColor[c.type]} className="w-fit text-xs">{c.type}</StatusBadge></CustomTableCell>
                     <CustomTableCell className="text-xs text-gray-500">{c.calcType}</CustomTableCell>
                     <CustomTableCell className="text-sm text-gray-700 dark:text-gray-200">
-                      {c.calcType === "Fixed Amount" ? `Rs. ${c.defaultValue.toLocaleString()}`
+                      {c.calcType === "Fixed Amount" ? `Rs. ${Number(c.defaultValue).toLocaleString()}`
                         : c.calcType === "Formula Based" ? "Formula"
                         : `${c.defaultValue}%`}
                     </CustomTableCell>
@@ -84,23 +96,24 @@ export default function SalaryComponents() {
                     <CustomTableCell>{boolBadge(c.mandatory)}</CustomTableCell>
                     <CustomTableCell>
                       <div className="flex justify-center gap-2">
-                        <CustomButton size="xs" color="blue" outline pill onClick={() => handleEdit(c)}>
+                        <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditData(c); setShowForm(true); }}>
                           <HiPencil className="h-3.5 w-3.5" />
                         </CustomButton>
-                        <CustomButton size="xs" color="warning" outline pill title="Archive">
-                          <HiArchive className="h-3.5 w-3.5" />
+                        <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(c.id)}>
+                          <HiTrash className="h-3.5 w-3.5" />
                         </CustomButton>
                       </div>
                     </CustomTableCell>
                   </CustomTableRow>
                 ))}
+                {!loading && filtered.length === 0 && (
+                  <CustomTableRow><CustomTableCell colSpan={9} className="py-8 text-center text-sm text-gray-400">No salary components found.</CustomTableCell></CustomTableRow>
+                )}
               </CustomTableBody>
             </CustomTable>
           </div>
           <div className="border-t border-gray-200 px-5 py-3 dark:border-gray-700">
-            <span className="text-sm text-gray-500">
-              {filtered.length} component{filtered.length !== 1 ? "s" : ""}
-            </span>
+            <span className="text-sm text-gray-500">{filtered.length} component{filtered.length !== 1 ? "s" : ""}</span>
           </div>
         </div>
       </div>
@@ -109,6 +122,7 @@ export default function SalaryComponents() {
         <ComponentForm
           closeForm={() => { setShowForm(false); setEditData(null); }}
           initialData={editData}
+          onSave={handleSave}
         />
       )}
     </Layout>

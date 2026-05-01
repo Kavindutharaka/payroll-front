@@ -1,15 +1,29 @@
+import { useState, useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomTextarea, CustomButton } from "../../../components/FormFields";
+import { fetchEmployees } from "../../../services/employeeService";
+import { fetchLeaveTypes } from "../../../services/leaveTypeService";
 
-const employees = [
-  { id: "EMP-001", name: "Mr. John A. Smith"   },
-  { id: "EMP-002", name: "Ms. Sarah Johnson"   },
-  { id: "EMP-003", name: "Dr. James R. Perera" },
-  { id: "EMP-004", name: "Ms. Nadia Fernando"  },
-];
-const leaveTypes = ["Annual Leave", "Sick Leave", "Casual Leave", "No-Pay Leave", "Maternity Leave", "Study Leave"];
+export default function LeaveApplyForm({ closeForm, onSave }) {
+  const [employees, setEmployees]   = useState([]);
+  const [leaveTypes, setLeaveTypes] = useState([]);
+  const [form, setForm] = useState({ emp_id: "", leaveType: "", dateFrom: "", dateTo: "", reason: "" });
 
-export default function LeaveApplyForm({ closeForm }) {
+  useEffect(() => {
+    fetchEmployees().then((d)  => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
+    fetchLeaveTypes().then((d) => setLeaveTypes(Array.isArray(d) ? d : [])).catch(console.error);
+  }, []);
+
+  const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const from = new Date(form.dateFrom);
+    const to   = new Date(form.dateTo);
+    const days = Math.max(1, Math.round((to - from) / (1000 * 60 * 60 * 24)) + 1);
+    onSave({ ...form, days });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
@@ -20,36 +34,36 @@ export default function LeaveApplyForm({ closeForm }) {
             <HiX className="h-5 w-5" />
           </button>
         </div>
-        <form className="flex flex-col gap-4 px-6 py-6">
+        <form className="flex flex-col gap-4 px-6 py-6" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="employee">Employee</CustomLabel>
-            <CustomSelect id="employee" required>
+            <CustomSelect id="employee" value={form.emp_id} onChange={set("emp_id")} required>
               <option value="">Select Employee</option>
               {employees.map((e) => (
-                <option key={e.id} value={e.id}>{e.name} ({e.id})</option>
+                <option key={e.emp_id} value={e.emp_id}>{e.initial} {e.firstName} {e.surName} ({e.emp_id})</option>
               ))}
             </CustomSelect>
           </div>
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="leaveType">Leave Type</CustomLabel>
-            <CustomSelect id="leaveType" required>
+            <CustomSelect id="leaveType" value={form.leaveType} onChange={set("leaveType")} required>
               <option value="">Select Leave Type</option>
-              {leaveTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+              {leaveTypes.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
             </CustomSelect>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="dateFrom">From</CustomLabel>
-              <CustomInput id="dateFrom" type="date" required />
+              <CustomInput id="dateFrom" type="date" value={form.dateFrom} onChange={set("dateFrom")} required />
             </div>
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="dateTo">To</CustomLabel>
-              <CustomInput id="dateTo" type="date" required />
+              <CustomInput id="dateTo" type="date" value={form.dateTo} onChange={set("dateTo")} required />
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="reason">Reason (optional)</CustomLabel>
-            <CustomTextarea id="reason" rows={3} placeholder="Brief reason for leave..." />
+            <CustomTextarea id="reason" rows={3} value={form.reason} onChange={set("reason")} placeholder="Brief reason for leave..." />
           </div>
           <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-gray-700">
             <CustomButton color="gray" type="button" onClick={closeForm}>Cancel</CustomButton>

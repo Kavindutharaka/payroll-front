@@ -1,33 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StatusBadge } from "../../../components/StatusBadge";
-import Layout from "../../../components/Layout";import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
+import Layout from "../../../components/Layout";
+import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import OTForm from "./OTForm";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { CustomButton } from "../../../components/FormFields";
-
-const otTypes = [
-  { id: 1, name: "Single OT",  multiplier: 1.5, baseFormula: "Basic Salary", hourDivision: 240, status: "Active" },
-  { id: 2, name: "Double OT",  multiplier: 2.0, baseFormula: "Basic Salary", hourDivision: 240, status: "Active" },
-  { id: 3, name: "Holiday OT", multiplier: 2.5, baseFormula: "Gross Salary", hourDivision: 240, status: "Active" },
-];
+import { fetchOTConfigs, createOTConfig, updateOTConfig, deleteOTConfig } from "../../../services/otConfigService";
 
 export default function OTConfig() {
+  const [otTypes, setOtTypes] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
 
-  const handleEdit = (ot) => { setEditData(ot); setShowForm(true); };
-  const handleAdd  = ()   => { setEditData(null); setShowForm(true); };
+  const load = async () => {
+    setLoading(true);
+    try { setOtTypes(Array.isArray(await fetchOTConfigs()) ? await fetchOTConfigs() : []); }
+    catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleSave = async (form) => {
+    try {
+      if (editData) await updateOTConfig(editData.id, form);
+      else          await createOTConfig(form);
+      setShowForm(false); setEditData(null); load();
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this OT type?")) return;
+    try { await deleteOTConfig(id); load(); } catch (err) { console.error(err); }
+  };
 
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">OT Configuration</h1>
             <p className="mt-1 text-sm text-gray-500">Define overtime types, multipliers and base formulas</p>
           </div>
-          <CustomButton color="purple" onClick={handleAdd}>
+          <CustomButton color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
             <HiPlus className="mr-2 h-4 w-4" /> Create OT Type
           </CustomButton>
         </div>
@@ -37,7 +53,6 @@ export default function OTConfig() {
             <CustomTable hoverable>
               <CustomTableHead>
                 <CustomTableRow>
-                  <CustomTableHeadCell>#</CustomTableHeadCell>
                   <CustomTableHeadCell>OT Name</CustomTableHeadCell>
                   <CustomTableHeadCell>Multiplier</CustomTableHeadCell>
                   <CustomTableHeadCell>Base Formula</CustomTableHeadCell>
@@ -47,9 +62,10 @@ export default function OTConfig() {
                 </CustomTableRow>
               </CustomTableHead>
               <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {otTypes.map((ot) => (
+                {loading ? (
+                  <CustomTableRow><CustomTableCell colSpan={6} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
+                ) : otTypes.map((ot) => (
                   <CustomTableRow key={ot.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                    <CustomTableCell className="text-sm text-gray-400">{ot.id}</CustomTableCell>
                     <CustomTableCell className="text-sm font-medium text-gray-800 dark:text-gray-200">{ot.name}</CustomTableCell>
                     <CustomTableCell>
                       <StatusBadge color="purple" className="w-fit font-mono text-sm">×{ot.multiplier}</StatusBadge>
@@ -61,21 +77,22 @@ export default function OTConfig() {
                     </CustomTableCell>
                     <CustomTableCell>
                       <div className="flex justify-center gap-2">
-                        <CustomButton size="xs" color="blue" outline pill onClick={() => handleEdit(ot)}>
+                        <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditData(ot); setShowForm(true); }}>
                           <HiPencil className="h-3.5 w-3.5" />
                         </CustomButton>
-                        <CustomButton size="xs" color="failure" outline pill>
+                        <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(ot.id)}>
                           <HiTrash className="h-3.5 w-3.5" />
                         </CustomButton>
                       </div>
                     </CustomTableCell>
                   </CustomTableRow>
                 ))}
+                {!loading && otTypes.length === 0 && (
+                  <CustomTableRow><CustomTableCell colSpan={6} className="py-8 text-center text-sm text-gray-400">No OT types configured.</CustomTableCell></CustomTableRow>
+                )}
               </CustomTableBody>
             </CustomTable>
           </div>
-
-          {/* Formula explanation */}
           <div className="border-t border-gray-200 bg-gray-50 px-5 py-4 dark:border-gray-700 dark:bg-gray-900/50">
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">OT Rate Formula</p>
             <p className="mt-1 font-mono text-sm text-gray-600 dark:text-gray-300">
@@ -89,6 +106,7 @@ export default function OTConfig() {
         <OTForm
           closeForm={() => { setShowForm(false); setEditData(null); }}
           initialData={editData}
+          onSave={handleSave}
         />
       )}
     </Layout>

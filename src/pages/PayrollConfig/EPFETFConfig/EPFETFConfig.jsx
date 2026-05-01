@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "../../../components/Layout";
 import { HiDocumentText } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomButton, CustomToggle } from "../../../components/FormFields";
+import { fetchEPFETFConfig, saveEPFETFConfig } from "../../../services/epfEtfConfigService";
 
-const currentConfig = {
+const defaults = {
   employeeContribution: 8,
   employerContributionEPF: 12,
   employerContributionETF: 3,
@@ -12,20 +13,32 @@ const currentConfig = {
 };
 
 export default function EPFETFConfig() {
-  const [config, setConfig]   = useState(currentConfig);
-  const [saved, setSaved]     = useState(false);
+  const [config, setConfig] = useState(defaults);
+  const [saved, setSaved]   = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchEPFETFConfig()
+      .then((d) => { if (d && (Array.isArray(d) ? d[0] : d)) setConfig(Array.isArray(d) ? d[0] : d); })
+      .catch(console.error);
+  }, []);
 
   const handleChange = (field, val) => {
     setConfig((prev) => ({ ...prev, [field]: val }));
     setSaved(false);
   };
 
-  const handleSave = (e) => { e.preventDefault(); setSaved(true); };
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try { await saveEPFETFConfig(config); setSaved(true); }
+    catch (err) { console.error(err); }
+    finally { setSaving(false); }
+  };
 
   return (
     <Layout>
       <div className="flex flex-col gap-6">
-
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">EPF / ETF Configuration</h1>
@@ -36,22 +49,18 @@ export default function EPFETFConfig() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-          {/* Config Card */}
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
               <p className="font-semibold text-gray-800 dark:text-white">Contribution Settings</p>
             </div>
             <form className="flex flex-col gap-5 px-6 py-6" onSubmit={handleSave}>
-
-              {/* Enable/Disable */}
               <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-600 dark:bg-gray-700">
                 <div>
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-200">EPF / ETF Enabled</p>
                   <p className="text-xs text-gray-400">Toggle to enable or disable globally</p>
                 </div>
                 <CustomToggle
-                  checked={config.enabled}
+                  checked={!!config.enabled}
                   onChange={(v) => handleChange("enabled", v)}
                   color="purple"
                 />
@@ -100,7 +109,9 @@ export default function EPFETFConfig() {
               </div>
 
               <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-gray-700">
-                <CustomButton color="purple" type="submit">Save Configuration</CustomButton>
+                <CustomButton color="purple" type="submit" disabled={saving}>
+                  {saving ? "Saving…" : "Save Configuration"}
+                </CustomButton>
               </div>
 
               {saved && (
@@ -111,7 +122,6 @@ export default function EPFETFConfig() {
             </form>
           </div>
 
-          {/* Summary Card */}
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
               <p className="font-semibold text-gray-800 dark:text-white">Current Rates Summary</p>
@@ -121,7 +131,7 @@ export default function EPFETFConfig() {
                 { label: "Employee EPF",  value: `${config.employeeContribution}%`,        color: "text-blue-600" },
                 { label: "Employer EPF",  value: `${config.employerContributionEPF}%`,     color: "text-purple-600" },
                 { label: "Employer ETF",  value: `${config.employerContributionETF}%`,     color: "text-green-600" },
-                { label: "Total (Empr.)", value: `${config.employerContributionEPF + config.employerContributionETF}%`, color: "text-orange-600" },
+                { label: "Total (Empr.)", value: `${Number(config.employerContributionEPF) + Number(config.employerContributionETF)}%`, color: "text-orange-600" },
                 { label: "Applies To",    value: config.appliesTo,                         color: "text-gray-600" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-700">
@@ -138,7 +148,6 @@ export default function EPFETFConfig() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </Layout>

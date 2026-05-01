@@ -1,32 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
+import { fetchEmployees } from "../../../services/employeeService";
+import { fetchLoanTypes } from "../../../services/loanTypeService";
 
-const employees = [
-  { id: "EMP-001", name: "Mr. John A. Smith"   },
-  { id: "EMP-002", name: "Ms. Sarah Johnson"   },
-  { id: "EMP-003", name: "Dr. James R. Perera" },
-  { id: "EMP-004", name: "Ms. Nadia Fernando"  },
-];
-const loanTypes = [
-  { id: 1, name: "Staff Loan",       interestRate: 0   },
-  { id: 2, name: "Festival Advance", interestRate: 0   },
-  { id: 3, name: "Vehicle Loan",     interestRate: 8   },
-  { id: 4, name: "Education Loan",   interestRate: 5   },
-];
-
-export default function EmployeeLoanForm({ closeForm }) {
+export default function EmployeeLoanForm({ closeForm, onSave }) {
+  const [employees, setEmployees]   = useState([]);
+  const [loanTypes, setLoanTypes]   = useState([]);
   const [selectedType, setSelectedType] = useState(null);
-  const [principal, setPrincipal]       = useState("");
-  const [installments, setInstallments] = useState(12);
+  const [form, setForm] = useState({ emp_id: "", loanTypeId: "", principal: "", installments: 12, startDate: "" });
 
-  const interest     = selectedType ? selectedType.interestRate : 0;
-  const totalPayable = principal ? Math.round(+principal * (1 + interest / 100)) : 0;
-  const monthly      = totalPayable && installments ? Math.round(totalPayable / installments) : 0;
+  useEffect(() => {
+    fetchEmployees().then((d)  => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
+    fetchLoanTypes().then((d) => setLoanTypes(Array.isArray(d) ? d : [])).catch(console.error);
+  }, []);
+
+  const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
   const handleTypeChange = (e) => {
     const found = loanTypes.find((lt) => lt.id === +e.target.value);
     setSelectedType(found ?? null);
+    setForm((p) => ({ ...p, loanTypeId: e.target.value }));
+  };
+
+  const interest     = selectedType ? Number(selectedType.interestRate) : 0;
+  const totalPayable = form.principal ? Math.round(+form.principal * (1 + interest / 100)) : 0;
+  const monthly      = totalPayable && form.installments ? Math.round(totalPayable / form.installments) : 0;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({
+      emp_id:             form.emp_id,
+      loanTypeId:         form.loanTypeId,
+      loanType:           selectedType?.name ?? "",
+      principal:          form.principal,
+      interestRate:       interest,
+      totalPayable,
+      installments:       form.installments,
+      monthlyInstallment: monthly,
+      startDate:          form.startDate,
+    });
   };
 
   return (
@@ -39,17 +52,19 @@ export default function EmployeeLoanForm({ closeForm }) {
             <HiX className="h-5 w-5" />
           </button>
         </div>
-        <form className="flex flex-col gap-4 px-6 py-6">
+        <form className="flex flex-col gap-4 px-6 py-6" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="employee">Employee</CustomLabel>
-            <CustomSelect id="employee" required>
+            <CustomSelect id="employee" value={form.emp_id} onChange={set("emp_id")} required>
               <option value="">Select Employee</option>
-              {employees.map((e) => <option key={e.id} value={e.id}>{e.name} ({e.id})</option>)}
+              {employees.map((e) => (
+                <option key={e.emp_id} value={e.emp_id}>{e.initial} {e.firstName} {e.surName} ({e.emp_id})</option>
+              ))}
             </CustomSelect>
           </div>
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="loanType">Loan Type</CustomLabel>
-            <CustomSelect id="loanType" onChange={handleTypeChange} required>
+            <CustomSelect id="loanType" value={form.loanTypeId} onChange={handleTypeChange} required>
               <option value="">Select Loan Type</option>
               {loanTypes.map((lt) => <option key={lt.id} value={lt.id}>{lt.name}</option>)}
             </CustomSelect>
@@ -57,22 +72,20 @@ export default function EmployeeLoanForm({ closeForm }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="principal">Principal Amount (Rs.)</CustomLabel>
-              <CustomInput id="principal" type="number" value={principal}
-                onChange={(e) => setPrincipal(e.target.value)} placeholder="e.g. 100000" required />
+              <CustomInput id="principal" type="number" value={form.principal}
+                onChange={set("principal")} placeholder="e.g. 100000" required />
             </div>
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="installments">No. of Installments</CustomLabel>
-              <CustomInput id="installments" type="number" value={installments}
-                onChange={(e) => setInstallments(+e.target.value)} required />
+              <CustomInput id="installments" type="number" value={form.installments}
+                onChange={set("installments")} required />
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="startDate">Start Date</CustomLabel>
-            <CustomInput id="startDate" type="date" required />
+            <CustomInput id="startDate" type="date" value={form.startDate} onChange={set("startDate")} required />
           </div>
-
-          {/* Auto-calculated summary */}
-          {principal > 0 && (
+          {form.principal > 0 && (
             <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-700 dark:bg-purple-900/20">
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-purple-500">Loan Summary</p>
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -82,7 +95,6 @@ export default function EmployeeLoanForm({ closeForm }) {
               </div>
             </div>
           )}
-
           <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-gray-700">
             <CustomButton color="gray" type="button" onClick={closeForm}>Cancel</CustomButton>
             <CustomButton color="purple" type="submit">Grant Loan</CustomButton>

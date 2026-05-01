@@ -16,7 +16,9 @@
       "Bash(Remove-Item -Recurse -Force \"D:\\\\Dev\\\\testing_fog\\\\front-end\\\\.claude\\\\worktrees\\\\elegant-faraday\\\\node_modules\\\\.cache\" -ErrorAction SilentlyContinue)",
       "Bash(node fix-buttons.js)",
       "Bash(node fix-labels.js)",
-      "Bash(node fix-labels-dynamic.js)"
+      "Bash(node fix-labels-dynamic.js)",
+      "Bash(npm install *)",
+      "Bash(node run_setup.js)"
     ]
   }
 }

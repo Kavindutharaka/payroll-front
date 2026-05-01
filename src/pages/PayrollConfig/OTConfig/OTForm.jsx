@@ -1,7 +1,18 @@
+import { useState } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
 
-export default function OTForm({ closeForm, initialData }) {
+export default function OTForm({ closeForm, initialData, onSave }) {
+  const [form, setForm] = useState({
+    name:        initialData?.name        ?? "",
+    multiplier:  initialData?.multiplier  ?? "",
+    hourDivision:initialData?.hourDivision?? 240,
+    baseFormula: initialData?.baseFormula ?? "Basic Salary",
+  });
+
+  const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
+  const handleSubmit = (e) => { e.preventDefault(); onSave(form); };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
@@ -14,26 +25,26 @@ export default function OTForm({ closeForm, initialData }) {
             <HiX className="h-5 w-5" />
           </button>
         </div>
-        <form className="flex flex-col gap-4 px-6 py-6">
+        <form className="flex flex-col gap-4 px-6 py-6" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="otName">OT Type Name</CustomLabel>
-            <CustomInput id="otName" defaultValue={initialData?.name} placeholder="e.g. Double OT" required />
+            <CustomInput id="otName" value={form.name} onChange={set("name")} placeholder="e.g. Double OT" required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="multiplier">Multiplier</CustomLabel>
               <CustomInput id="multiplier" type="number" step="0.5" min="1"
-                defaultValue={initialData?.multiplier} placeholder="e.g. 1.5" required />
+                value={form.multiplier} onChange={set("multiplier")} placeholder="e.g. 1.5" required />
             </div>
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="hourDivision">Hour Division</CustomLabel>
               <CustomInput id="hourDivision" type="number"
-                defaultValue={initialData?.hourDivision ?? 240} placeholder="e.g. 240" required />
+                value={form.hourDivision} onChange={set("hourDivision")} placeholder="e.g. 240" required />
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="baseFormula">Base Salary Formula</CustomLabel>
-            <CustomSelect id="baseFormula" defaultValue={initialData?.baseFormula ?? "Basic Salary"}>
+            <CustomSelect id="baseFormula" value={form.baseFormula} onChange={set("baseFormula")}>
               <option value="Basic Salary">Basic Salary</option>
               <option value="Gross Salary">Gross Salary</option>
             </CustomSelect>

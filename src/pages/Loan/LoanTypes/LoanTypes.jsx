@@ -1,20 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StatusBadge } from "../../../components/StatusBadge";
-import Layout from "../../../components/Layout";import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
+import Layout from "../../../components/Layout";
+import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import LoanTypeForm from "./LoanTypeForm";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { CustomButton } from "../../../components/FormFields";
-
-const loanTypes = [
-  { id: 1, name: "Staff Loan",       interestRate: 0,   maxAmount: 500000,  installmentMethod: "Equal Monthly", linkedComponent: "Loan Installment" },
-  { id: 2, name: "Festival Advance", interestRate: 0,   maxAmount: 50000,   installmentMethod: "Lump Sum",       linkedComponent: "Salary Advance Deduction" },
-  { id: 3, name: "Vehicle Loan",     interestRate: 8,   maxAmount: 1500000, installmentMethod: "Equal Monthly", linkedComponent: "Loan Installment" },
-  { id: 4, name: "Education Loan",   interestRate: 5,   maxAmount: 200000,  installmentMethod: "Equal Monthly", linkedComponent: "Loan Installment" },
-];
+import { fetchLoanTypes, createLoanType, updateLoanType, deleteLoanType } from "../../../services/loanTypeService";
 
 export default function LoanTypes() {
-  const [showForm, setShowForm] = useState(false);
-  const [editData, setEditData] = useState(null);
+  const [loanTypes, setLoanTypes] = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [showForm, setShowForm]   = useState(false);
+  const [editData, setEditData]   = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    try { setLoanTypes(Array.isArray(await fetchLoanTypes()) ? await fetchLoanTypes() : []); }
+    catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleSave = async (form) => {
+    try {
+      if (editData) await updateLoanType(editData.id, form);
+      else          await createLoanType(form);
+      setShowForm(false); setEditData(null); load();
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this loan type?")) return;
+    try { await deleteLoanType(id); load(); } catch (err) { console.error(err); }
+  };
 
   return (
     <Layout>
@@ -28,7 +47,6 @@ export default function LoanTypes() {
             <HiPlus className="mr-2 h-4 w-4" /> Create Loan Type
           </CustomButton>
         </div>
-
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <div className="overflow-x-auto">
             <CustomTable hoverable>
@@ -44,45 +62,40 @@ export default function LoanTypes() {
                 </CustomTableRow>
               </CustomTableHead>
               <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {loanTypes.map((lt) => (
+                {loading ? (
+                  <CustomTableRow><CustomTableCell colSpan={7} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
+                ) : loanTypes.map((lt, idx) => (
                   <CustomTableRow key={lt.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                    <CustomTableCell className="text-sm text-gray-400">{lt.id}</CustomTableCell>
+                    <CustomTableCell className="text-sm text-gray-400">{idx + 1}</CustomTableCell>
                     <CustomTableCell className="text-sm font-medium text-gray-800 dark:text-gray-200">{lt.name}</CustomTableCell>
                     <CustomTableCell>
-                      <StatusBadge color={lt.interestRate === 0 ? "success" : "warning"} className="w-fit text-xs">
-                        {lt.interestRate}%
-                      </StatusBadge>
+                      <StatusBadge color={lt.interestRate == 0 ? "success" : "warning"} className="w-fit text-xs">{lt.interestRate}%</StatusBadge>
                     </CustomTableCell>
-                    <CustomTableCell className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Rs. {lt.maxAmount.toLocaleString()}
-                    </CustomTableCell>
+                    <CustomTableCell className="text-sm font-semibold text-gray-700 dark:text-gray-200">Rs. {Number(lt.maxAmount).toLocaleString()}</CustomTableCell>
                     <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{lt.installmentMethod}</CustomTableCell>
-                    <CustomTableCell>
-                      <StatusBadge color="indigo" className="w-fit text-xs">{lt.linkedComponent}</StatusBadge>
-                    </CustomTableCell>
+                    <CustomTableCell><StatusBadge color="indigo" className="w-fit text-xs">{lt.linkedComponent}</StatusBadge></CustomTableCell>
                     <CustomTableCell>
                       <div className="flex justify-center gap-2">
                         <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditData(lt); setShowForm(true); }}>
                           <HiPencil className="h-3.5 w-3.5" />
                         </CustomButton>
-                        <CustomButton size="xs" color="failure" outline pill>
+                        <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(lt.id)}>
                           <HiTrash className="h-3.5 w-3.5" />
                         </CustomButton>
                       </div>
                     </CustomTableCell>
                   </CustomTableRow>
                 ))}
+                {!loading && loanTypes.length === 0 && (
+                  <CustomTableRow><CustomTableCell colSpan={7} className="py-8 text-center text-sm text-gray-400">No loan types found.</CustomTableCell></CustomTableRow>
+                )}
               </CustomTableBody>
             </CustomTable>
           </div>
         </div>
       </div>
-
       {showForm && (
-        <LoanTypeForm
-          closeForm={() => { setShowForm(false); setEditData(null); }}
-          initialData={editData}
-        />
+        <LoanTypeForm closeForm={() => { setShowForm(false); setEditData(null); }} initialData={editData} onSave={handleSave} />
       )}
     </Layout>
   );
