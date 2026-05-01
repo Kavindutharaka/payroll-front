@@ -11,7 +11,7 @@ const employees = [
     nic: "901234567V", dob: "1990-05-15", address: "123 Main St, Colombo",
     title: "Software Engineer", designation: "Team Lead", dateOfJoining: "2020-01-10",
     position: "Software Engineer", level: "Senior",
-    category: "Non-Academic", employmentType: "Permanent",
+    category: "Main - Administrative Staff", employmentType: "Permanent",
     basicSalary: 85000, taxMode: "Mode 1", epfEtf: true, status: "Active",
     bank: "Bank of Ceylon", branch: "Colombo 03", accountNum: "1234567890",
   },
@@ -20,7 +20,7 @@ const employees = [
     nic: "881234567V", dob: "1988-09-22", address: "45 Lake Rd, Kandy",
     title: "HR Manager", designation: "HR Head", dateOfJoining: "2019-03-01",
     position: "HR Manager", level: "Manager",
-    category: "Non-Academic", employmentType: "Permanent",
+    category: "Main - Administrative Staff", employmentType: "Permanent",
     basicSalary: 95000, taxMode: "Mode 1", epfEtf: true, status: "Active",
     bank: "Peoples Bank", branch: "Kandy", accountNum: "9876543210",
   },
@@ -29,7 +29,7 @@ const employees = [
     nic: "850987654V", dob: "1985-12-03", address: "78 Hill Street, Galle",
     title: "Senior Lecturer", designation: "HoD", dateOfJoining: "2021-06-15",
     position: "Lecturer", level: "Lead",
-    category: "Academic", employmentType: "Permanent",
+    category: "Main - Upper School", employmentType: "Permanent",
     basicSalary: 120000, taxMode: "Mode 2", epfEtf: true, status: "Active",
     bank: "Commercial Bank", branch: "Galle", accountNum: "1122334455",
   },
@@ -38,13 +38,22 @@ const employees = [
     nic: "952345678V", dob: "1995-04-11", address: "22 Beach Rd, Negombo",
     title: "Teaching Assistant", designation: "Demonstrator", dateOfJoining: "2023-01-02",
     position: "Instructor", level: "Junior",
-    category: "Academic", employmentType: "Temporary",
+    category: "Battaramulla - Academic Staff", employmentType: "Temporary",
     basicSalary: 45000, taxMode: "No Tax", epfEtf: false, status: "Active",
     bank: "HNB", branch: "Negombo", accountNum: "5566778899",
   },
 ];
 
-const categoryColor = { Academic: "indigo", "Non-Academic": "purple" };
+const categoryColor = {
+  "Main - Upper School": "indigo",
+  "Main - Junior School": "indigo",
+  "Main - Elementary School": "indigo",
+  "Main - Administrative Staff": "purple",
+  "Main - Support Staff": "purple",
+  "Battaramulla - Academic Staff": "blue",
+  "Battaramulla - Administrative Staff": "cyan",
+  "Battaramulla - Support Staff": "cyan",
+};
 const typeColor     = { Permanent: "success", Temporary: "warning" };
 const statusColor   = { Active: "success", Inactive: "failure" };
 
@@ -93,8 +102,20 @@ export function EmployeeTable() {
         />
         <CustomSelect value={filterCat} onChange={(e) => setFilterCat(e.target.value)} sizing="sm">
           <option value="all">All Categories</option>
-          <option value="Academic">Academic</option>
-          <option value="Non-Academic">Non-Academic</option>
+          <optgroup label="Main School — Academic">
+            <option value="Main - Upper School">Upper School</option>
+            <option value="Main - Junior School">Junior School</option>
+            <option value="Main - Elementary School">Elementary School</option>
+          </optgroup>
+          <optgroup label="Main School — Non-Academic">
+            <option value="Main - Administrative Staff">Administrative Staff</option>
+            <option value="Main - Support Staff">Support Staff</option>
+          </optgroup>
+          <optgroup label="Battaramulla School">
+            <option value="Battaramulla - Academic Staff">Academic Staff</option>
+            <option value="Battaramulla - Administrative Staff">Administrative Staff</option>
+            <option value="Battaramulla - Support Staff">Support Staff</option>
+          </optgroup>
         </CustomSelect>
       </div>
 

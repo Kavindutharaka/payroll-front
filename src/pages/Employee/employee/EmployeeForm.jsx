@@ -104,24 +104,14 @@ export default function EmployeeForm({ closeForm, initialData }) {
                   <CustomInput id="title" defaultValue={initialData?.title} placeholder="e.g. Software Engineer" required />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <CustomLabel htmlFor="designation">Designation</CustomLabel>
-                  <CustomInput id="designation" defaultValue={initialData?.designation} placeholder="e.g. Team Lead" required />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <CustomLabel htmlFor="dateOfJoining">Date of Joining</CustomLabel>
-                  <CustomInput id="dateOfJoining" type="date" defaultValue={initialData?.dateOfJoining} required />
-                </div>
+              {/* Designation — hidden, reserved for future use */}
+              <div className="hidden">
+                <CustomInput id="designation" defaultValue={initialData?.designation} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <CustomLabel htmlFor="category">Category</CustomLabel>
-                  <CustomSelect id="category" defaultValue={initialData?.category ?? ""} required>
-                    <option value="">Select Category</option>
-                    <option value="Academic">Academic</option>
-                    <option value="Non-Academic">Non-Academic</option>
-                  </CustomSelect>
+                  <CustomLabel htmlFor="dateOfJoining">Date of Joining</CustomLabel>
+                  <CustomInput id="dateOfJoining" type="date" defaultValue={initialData?.dateOfJoining} required />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="employmentType">Employment Type</CustomLabel>
@@ -134,10 +124,23 @@ export default function EmployeeForm({ closeForm, initialData }) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <CustomLabel htmlFor="position">Position</CustomLabel>
-                  <CustomSelect id="position" defaultValue={initialData?.position ?? ""} required>
-                    <option value="">Select Position</option>
-                    {positions.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  <CustomLabel htmlFor="category">Category</CustomLabel>
+                  <CustomSelect id="category" defaultValue={initialData?.category ?? ""} required>
+                    <option value="">Select Category</option>
+                    <optgroup label="Main School — Academic">
+                      <option value="Main - Upper School">Upper School</option>
+                      <option value="Main - Junior School">Junior School</option>
+                      <option value="Main - Elementary School">Elementary School</option>
+                    </optgroup>
+                    <optgroup label="Main School — Non-Academic">
+                      <option value="Main - Administrative Staff">Administrative Staff</option>
+                      <option value="Main - Support Staff">Support Staff</option>
+                    </optgroup>
+                    <optgroup label="Battaramulla School">
+                      <option value="Battaramulla - Academic Staff">Academic Staff</option>
+                      <option value="Battaramulla - Administrative Staff">Administrative Staff</option>
+                      <option value="Battaramulla - Support Staff">Support Staff</option>
+                    </optgroup>
                   </CustomSelect>
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -147,6 +150,13 @@ export default function EmployeeForm({ closeForm, initialData }) {
                     {levels.map((l) => <option key={l.id} value={l.name}>{l.name}</option>)}
                   </CustomSelect>
                 </div>
+              </div>
+              {/* Position — hidden, reserved for future use */}
+              <div className="hidden">
+                <CustomSelect id="position" defaultValue={initialData?.position ?? ""}>
+                  <option value="">Select Position</option>
+                  {positions.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
+                </CustomSelect>
               </div>
             </div>
           </section>
