@@ -13,10 +13,13 @@ export const createEmployee = (e) =>
     `@midName=${esc(e.midName)},@surName=${esc(e.surName)},@nic=${esc(e.nic)},` +
     `@dob=${esc(e.dob)},@address=${esc(e.address)},@title=${esc(e.title)},` +
     `@designation=${esc(e.designation)},@dateOfJoining=${esc(e.dateOfJoining)},` +
+    `@dateOfResignation=${esc(e.dateOfResignation)},` +
     `@category=${esc(e.category)},@employmentType=${esc(e.employmentType)},` +
     `@position=${esc(e.position)},@level=${esc(e.level)},@basicSalary=${num(e.basicSalary)},` +
-    `@taxMode=${esc(e.taxMode)},@epfEtf=${bit(e.epfEtf)},@bank=${esc(e.bank)},` +
-    `@branch=${esc(e.branch)},@accountNum=${esc(e.accountNum)}`
+    `@taxMode=${esc(e.taxMode)},@epfEtf=${bit(e.epfEtf)},@epfEtfName=${esc(e.epfEtfName)},` +
+    `@accountName=${esc(e.accountName)},@bank=${esc(e.bank)},` +
+    `@branch=${esc(e.branch)},@accountNum=${esc(e.accountNum)},` +
+    `@bankCode=${esc(e.bankCode)},@branchCode=${esc(e.branchCode)}`
   );
 
 export const updateEmployee = (id, e) =>
@@ -26,10 +29,13 @@ export const updateEmployee = (id, e) =>
     `@midName=${esc(e.midName)},@surName=${esc(e.surName)},@nic=${esc(e.nic)},` +
     `@dob=${esc(e.dob)},@address=${esc(e.address)},@title=${esc(e.title)},` +
     `@designation=${esc(e.designation)},@dateOfJoining=${esc(e.dateOfJoining)},` +
+    `@dateOfResignation=${esc(e.dateOfResignation)},` +
     `@category=${esc(e.category)},@employmentType=${esc(e.employmentType)},` +
     `@position=${esc(e.position)},@level=${esc(e.level)},@basicSalary=${num(e.basicSalary)},` +
-    `@taxMode=${esc(e.taxMode)},@epfEtf=${bit(e.epfEtf)},@bank=${esc(e.bank)},` +
-    `@branch=${esc(e.branch)},@accountNum=${esc(e.accountNum)}`
+    `@taxMode=${esc(e.taxMode)},@epfEtf=${bit(e.epfEtf)},@epfEtfName=${esc(e.epfEtfName)},` +
+    `@accountName=${esc(e.accountName)},@bank=${esc(e.bank)},` +
+    `@branch=${esc(e.branch)},@accountNum=${esc(e.accountNum)},` +
+    `@bankCode=${esc(e.bankCode)},@branchCode=${esc(e.branchCode)}`
   );
 
 export const deleteEmployee = (id) =>

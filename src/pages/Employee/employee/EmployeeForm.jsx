@@ -15,26 +15,31 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
   const isEdit = !!initialData;
 
   const [form, setForm] = useState({
-    emp_id:         initialData?.emp_id         ?? "",
-    initial:        initialData?.initial        ?? "",
-    firstName:      initialData?.firstName      ?? "",
-    midName:        initialData?.midName        ?? "",
-    surName:        initialData?.surName        ?? "",
-    nic:            initialData?.nic            ?? "",
-    dob:            initialData?.dob            ?? "",
-    address:        initialData?.address        ?? "",
-    title:          initialData?.title          ?? "",
-    designation:    initialData?.designation    ?? "",
-    dateOfJoining:  initialData?.dateOfJoining  ?? "",
-    category:       initialData?.category       ?? "",
-    employmentType: initialData?.employmentType ?? "",
-    position:       initialData?.position       ?? "",
-    level:          initialData?.level          ?? "",
-    basicSalary:    initialData?.basicSalary    ?? "",
-    taxMode:        initialData?.taxMode        ?? "",
-    bank:           initialData?.bank           ?? "",
-    branch:         initialData?.branch         ?? "",
-    accountNum:     initialData?.accountNum     ?? "",
+    emp_id:             initialData?.emp_id             ?? "",
+    initial:            initialData?.initial            ?? "",
+    firstName:          initialData?.firstName          ?? "",
+    midName:            initialData?.midName            ?? "",
+    surName:            initialData?.surName            ?? "",
+    nic:                initialData?.nic                ?? "",
+    dob:                initialData?.dob                ?? "",
+    address:            initialData?.address            ?? "",
+    title:              initialData?.title              ?? "",
+    designation:        initialData?.designation        ?? "",
+    dateOfJoining:      initialData?.dateOfJoining      ?? "",
+    dateOfResignation:  initialData?.dateOfResignation  ?? "",
+    category:           initialData?.category           ?? "",
+    employmentType:     initialData?.employmentType     ?? "",
+    position:           initialData?.position           ?? "",
+    level:              initialData?.level              ?? "",
+    basicSalary:        initialData?.basicSalary        ?? "",
+    taxMode:            initialData?.taxMode            ?? "",
+    epfEtfName:         initialData?.epfEtfName         ?? "",
+    accountName:        initialData?.accountName        ?? "",
+    bank:               initialData?.bank               ?? "",
+    branch:             initialData?.branch             ?? "",
+    accountNum:         initialData?.accountNum         ?? "",
+    bankCode:           initialData?.bankCode           ?? "",
+    branchCode:         initialData?.branchCode         ?? "",
   });
   const [epfEtf, setEpfEtf] = useState(initialData?.epfEtf ?? true);
 
@@ -91,8 +96,8 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
                   <CustomInput id="surName" value={form.surName} onChange={set("surName")} placeholder="Surname" required />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <CustomLabel htmlFor="nic">NIC</CustomLabel>
-                  <CustomInput id="nic" value={form.nic} onChange={set("nic")} placeholder="e.g. 123456789V" required />
+                  <CustomLabel htmlFor="nic">NIC / Passport No</CustomLabel>
+                  <CustomInput id="nic" value={form.nic} onChange={set("nic")} placeholder="e.g. 123456789V or N1234567" required />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -115,7 +120,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="empId">Employee ID</CustomLabel>
-                  <CustomInput id="empId" value={form.emp_id} onChange={set("emp_id")} placeholder="e.g. EMP-001" required />
+                  <CustomInput id="empId" type="number" value={form.emp_id} onChange={set("emp_id")} placeholder="e.g. 001" required />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="title">Title / Job Title</CustomLabel>
@@ -134,33 +139,20 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
                   <CustomInput id="dateOfJoining" type="date" value={form.dateOfJoining} onChange={set("dateOfJoining")} required />
                 </div>
                 <div className="flex flex-col gap-1.5">
+                  <CustomLabel htmlFor="dateOfResignation">Date of Resignation</CustomLabel>
+                  <CustomInput id="dateOfResignation" type="date" value={form.dateOfResignation} onChange={set("dateOfResignation")} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="employmentType">Employment Type</CustomLabel>
                   <CustomSelect id="employmentType" value={form.employmentType} onChange={set("employmentType")} required>
                     <option value="">Select Type</option>
                     <option value="Permanent">Permanent</option>
+                    <option value="Independent Contractor">Independent Contractor</option>
                     <option value="Temporary">Temporary</option>
-                  </CustomSelect>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <CustomLabel htmlFor="category">Category</CustomLabel>
-                  <CustomSelect id="category" value={form.category} onChange={set("category")} required>
-                    <option value="">Select Category</option>
-                    <optgroup label="Main School — Academic">
-                      <option value="Main - Upper School">Upper School</option>
-                      <option value="Main - Junior School">Junior School</option>
-                      <option value="Main - Elementary School">Elementary School</option>
-                    </optgroup>
-                    <optgroup label="Main School — Non-Academic">
-                      <option value="Main - Administrative Staff">Administrative Staff</option>
-                      <option value="Main - Support Staff">Support Staff</option>
-                    </optgroup>
-                    <optgroup label="Battaramulla School">
-                      <option value="Battaramulla - Academic Staff">Academic Staff</option>
-                      <option value="Battaramulla - Administrative Staff">Administrative Staff</option>
-                      <option value="Battaramulla - Support Staff">Support Staff</option>
-                    </optgroup>
+                    <option value="Intern">Intern</option>
                   </CustomSelect>
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -170,6 +162,28 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
                     {levels.map((l) => <option key={l} value={l}>{l}</option>)}
                   </CustomSelect>
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <CustomLabel htmlFor="category">Category</CustomLabel>
+                <CustomSelect id="category" value={form.category} onChange={set("category")} required>
+                  <option value="">Select Category</option>
+                  <optgroup label="Main School — Academic">
+                    <option value="Main - Upper School">Upper School</option>
+                    <option value="Main - Junior School">Junior School</option>
+                    <option value="Main - Elementary School">Elementary School</option>
+                  </optgroup>
+                  <optgroup label="Main School">
+                    <option value="Main - Non-Academic Staff">Non-Academic Staff</option>
+                    <option value="Main - Administrative Staff">Administrative Staff</option>
+                    <option value="Main - Support Staff">Support Staff</option>
+                  </optgroup>
+                  <optgroup label="Battaramulla School">
+                    <option value="Battaramulla - Academic Staff">Academic Staff</option>
+                    <option value="Battaramulla - Administrative Staff">Administrative Staff</option>
+                    <option value="Battaramulla - Support Staff">Support Staff</option>
+                  </optgroup>
+                </CustomSelect>
               </div>
 
               {/* Position — hidden, reserved for future use */}
@@ -199,12 +213,21 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
                   </CustomSelect>
                 </div>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-600 dark:bg-gray-700">
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">EPF / ETF Eligibility</p>
-                  <p className="text-xs text-gray-400">Toggle to enable or disable EPF/ETF for this employee</p>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-600 dark:bg-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">EPF / ETF Eligibility</p>
+                    <p className="text-xs text-gray-400">Toggle to enable or disable EPF/ETF for this employee</p>
+                  </div>
+                  <CustomToggle checked={epfEtf} onChange={setEpfEtf} color="purple" />
                 </div>
-                <CustomToggle checked={epfEtf} onChange={setEpfEtf} color="purple" />
+                {epfEtf && (
+                  <div className="mt-3 flex flex-col gap-1.5">
+                    <CustomLabel htmlFor="epfEtfName">EPF / ETF Member Name</CustomLabel>
+                    <CustomInput id="epfEtfName" value={form.epfEtfName} onChange={set("epfEtfName")}
+                      placeholder="Name as registered under EPF/ETF" />
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -215,6 +238,16 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
+                  <CustomLabel htmlFor="accountName">Account Name</CustomLabel>
+                  <CustomInput id="accountName" value={form.accountName} onChange={set("accountName")} placeholder="e.g. John D. Perera" required />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <CustomLabel htmlFor="accountNum">Account Number</CustomLabel>
+                  <CustomInput id="accountNum" value={form.accountNum} onChange={set("accountNum")} placeholder="e.g. 1234567890" required />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="bank">Bank</CustomLabel>
                   <CustomInput id="bank" value={form.bank} onChange={set("bank")} placeholder="e.g. Bank of Ceylon" required />
                 </div>
@@ -223,9 +256,15 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
                   <CustomInput id="branch" value={form.branch} onChange={set("branch")} placeholder="e.g. Colombo 03" required />
                 </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <CustomLabel htmlFor="accountNum">Account Number</CustomLabel>
-                <CustomInput id="accountNum" value={form.accountNum} onChange={set("accountNum")} placeholder="e.g. 1234567890" required />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <CustomLabel htmlFor="bankCode">Bank Code</CustomLabel>
+                  <CustomInput id="bankCode" value={form.bankCode} onChange={set("bankCode")} placeholder="e.g. 7010" required />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <CustomLabel htmlFor="branchCode">Branch Code</CustomLabel>
+                  <CustomInput id="branchCode" value={form.branchCode} onChange={set("branchCode")} placeholder="e.g. 001" required />
+                </div>
               </div>
             </div>
           </section>
