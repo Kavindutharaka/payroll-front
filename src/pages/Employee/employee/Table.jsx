@@ -10,6 +10,7 @@ const categoryColor = {
   "Main - Upper School":               "indigo",
   "Main - Junior School":              "indigo",
   "Main - Elementary School":          "indigo",
+  "Main - Non-Academic Staff":         "purple",
   "Main - Administrative Staff":       "purple",
   "Main - Support Staff":              "purple",
   "Battaramulla - Academic Staff":     "blue",
@@ -17,7 +18,18 @@ const categoryColor = {
   "Battaramulla - Support Staff":      "cyan",
 };
 const typeColor   = { Permanent: "success", Temporary: "warning" };
-const statusColor = { Active: "success", Inactive: "failure" };
+const statusColor = { Active: "success", Resigned: "failure", Notice: "warning", Inactive: "failure" };
+
+// An employee with a resignation date is no longer "Active".
+// Future-dated resignation = still working out their notice period.
+const displayStatus = (emp) => {
+  if (!emp.dateOfResignation) return emp.status ?? "Active";
+  const resign = new Date(emp.dateOfResignation);
+  if (isNaN(resign)) return emp.status ?? "Active";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return resign <= today ? "Resigned" : "Notice";
+};
 
 export function EmployeeTable() {
   const [employees, setEmployees] = useState([]);
@@ -99,7 +111,8 @@ export function EmployeeTable() {
             <option value="Main - Junior School">Junior School</option>
             <option value="Main - Elementary School">Elementary School</option>
           </optgroup>
-          <optgroup label="Main School — Non-Academic">
+          <optgroup label="Main School">
+            <option value="Main - Non-Academic Staff">Non-Academic Staff</option>
             <option value="Main - Administrative Staff">Administrative Staff</option>
             <option value="Main - Support Staff">Support Staff</option>
           </optgroup>
@@ -123,7 +136,7 @@ export function EmployeeTable() {
                 <CustomTableHeadCell>Category</CustomTableHeadCell>
                 <CustomTableHeadCell>Type</CustomTableHeadCell>
                 <CustomTableHeadCell>Basic Salary</CustomTableHeadCell>
-                <CustomTableHeadCell>Level</CustomTableHeadCell>
+                <CustomTableHeadCell>Contact No</CustomTableHeadCell>
                 <CustomTableHeadCell>EPF/ETF</CustomTableHeadCell>
                 <CustomTableHeadCell>Status</CustomTableHeadCell>
                 <CustomTableHeadCell className="text-center">Actions</CustomTableHeadCell>
@@ -152,8 +165,8 @@ export function EmployeeTable() {
                   <CustomTableCell className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                     Rs. {Number(emp.basicSalary).toLocaleString()}
                   </CustomTableCell>
-                  <CustomTableCell>
-                    <StatusBadge color="indigo" className="w-fit text-xs">{emp.level}</StatusBadge>
+                  <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                    {emp.contactNo || "—"}
                   </CustomTableCell>
                   <CustomTableCell>
                     <StatusBadge color={emp.epfEtf ? "success" : "gray"} className="w-fit text-xs">
@@ -161,7 +174,14 @@ export function EmployeeTable() {
                     </StatusBadge>
                   </CustomTableCell>
                   <CustomTableCell>
-                    <StatusBadge color={statusColor[emp.status] ?? "gray"} className="w-fit text-xs">{emp.status}</StatusBadge>
+                    {(() => {
+                      const st = displayStatus(emp);
+                      return (
+                        <StatusBadge color={statusColor[st] ?? "gray"} className="w-fit text-xs">
+                          {st}
+                        </StatusBadge>
+                      );
+                    })()}
                   </CustomTableCell>
                   <CustomTableCell>
                     <div className="flex items-center justify-center gap-2">

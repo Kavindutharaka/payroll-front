@@ -6,6 +6,11 @@ const SP    = 'dbo.payroll_salary_structure_sp';
 export const fetchStructureByEmployee = (emp_id) =>
   execSQL(`SELECT * FROM ${TABLE} WHERE emp_id = ${esc(emp_id)} AND status != 'Deleted' ORDER BY id ASC`);
 
+// Every employee's structure in one call — used by the payroll run so it
+// doesn't fire one request per employee.
+export const fetchAllStructures = () =>
+  execSQL(`SELECT * FROM ${TABLE} WHERE status != 'Deleted' ORDER BY emp_id, id`);
+
 export const createStructureItem = (d) =>
   execSQL(
     `EXEC ${SP} @action='INSERT',@emp_id=${esc(d.emp_id)},@componentName=${esc(d.componentName)},` +

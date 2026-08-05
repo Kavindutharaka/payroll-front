@@ -1,34 +1,65 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomButton, CustomToggle } from "../../../components/FormFields";
+import { fetchSalaryComponents } from "../../../services/salaryComponentService";
 
-const availableComponents = [
-  "Transport Allowance", "Mobile Allowance", "Attendance Bonus", "Risk Allowance",
-  "Research Allowance", "Housing Allowance", "Meal Allowance", "Medical Allowance",
-  "NOPAY Deduction", "Salary Advance Deduction", "Loan Installment", "EPF Deduction",
-];
 const calcTypes = ["Fixed Amount", "Percentage of Basic", "Percentage of Gross", "Formula Based"];
 
-export default function AssignComponentForm({ employee, closeForm, onSave }) {
-  const [form, setForm]   = useState({ componentName: "", type: "Allowance", calcType: "Fixed Amount", value: "", effectiveFrom: "" });
-  const [taxable, setTaxable] = useState(false);
-  const [epf, setEpf]         = useState(false);
-  const [etf, setEtf]         = useState(false);
+export default function AssignComponentForm({ employee, closeForm, onSave, initialData }) {
+  const isEdit = !!initialData;
+  const [available, setAvailable] = useState([]);
+  const [form, setForm] = useState({
+    componentName: initialData?.componentName ?? "",
+    type:          initialData?.type          ?? "Allowance",
+    calcType:      initialData?.calcType      ?? "Fixed Amount",
+    value:         initialData?.value         ?? "",
+    effectiveFrom: initialData?.effectiveFrom?.slice?.(0, 10) ?? "",
+  });
+  const [taxable, setTaxable] = useState(!!initialData?.taxable);
+  const [epf, setEpf]         = useState(!!initialData?.epfApplicable);
+  const [etf, setEtf]         = useState(!!initialData?.etfApplicable);
+
+  useEffect(() => {
+    fetchSalaryComponents()
+      .then((d) => setAvailable(Array.isArray(d) ? d : []))
+      .catch(console.error);
+  }, []);
 
   const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
+
+  // Picking a component from the master list pre-fills its configured rules
+  const pickComponent = (e) => {
+    const name = e.target.value;
+    const match = available.find((c) => c.name === name);
+    setForm((p) => ({
+      ...p,
+      componentName: name,
+      type:     match?.type     ?? p.type,
+      calcType: match?.calcType ?? p.calcType,
+    }));
+    if (match) {
+      setTaxable(!!match.taxable);
+      setEpf(!!match.epfApplicable);
+      setEtf(!!match.etfApplicable);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave({ ...form, emp_id: employee.emp_id, taxable, epfApplicable: epf, etfApplicable: etf });
   };
 
+  const empName = `${employee?.initial ?? ""} ${employee?.firstName ?? ""} ${employee?.surName ?? ""}`.trim();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-purple-600 px-6 py-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">Assign Salary Component</h3>
-            <p className="text-sm text-purple-200">{employee?.name}</p>
+            <h3 className="text-lg font-semibold text-white">
+              {isEdit ? "Edit Salary Component" : "Assign Salary Component"}
+            </h3>
+            <p className="text-sm text-purple-200">{empName}</p>
           </div>
           <button type="button" onClick={closeForm}
             className="rounded-lg p-1.5 text-purple-200 hover:bg-purple-500 hover:text-white">
@@ -39,9 +70,13 @@ export default function AssignComponentForm({ employee, closeForm, onSave }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="component">Component</CustomLabel>
-              <CustomSelect id="component" value={form.componentName} onChange={set("componentName")} required>
+              <CustomSelect id="component" value={form.componentName} onChange={pickComponent} required>
                 <option value="">Select Component</option>
-                {availableComponents.map((c) => <option key={c} value={c}>{c}</option>)}
+                {available.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                {/* keep an existing value selectable even if it was archived from the master list */}
+                {form.componentName && !available.some((c) => c.name === form.componentName) && (
+                  <option value={form.componentName}>{form.componentName}</option>
+                )}
               </CustomSelect>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -49,6 +84,7 @@ export default function AssignComponentForm({ employee, closeForm, onSave }) {
               <CustomSelect id="compType" value={form.type} onChange={set("type")} required>
                 <option value="Allowance">Allowance</option>
                 <option value="Deduction">Deduction</option>
+                <option value="Employer Contribution">Employer Contribution</option>
               </CustomSelect>
             </div>
           </div>
@@ -61,7 +97,7 @@ export default function AssignComponentForm({ employee, closeForm, onSave }) {
             </div>
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="value">{form.calcType === "Fixed Amount" ? "Amount (Rs.)" : "Value (%)"}</CustomLabel>
-              <CustomInput id="value" type="number" value={form.value} onChange={set("value")}
+              <CustomInput id="value" type="number" step="0.01" value={form.value} onChange={set("value")}
                 placeholder={form.calcType === "Fixed Amount" ? "e.g. 5000" : "e.g. 5"}
                 disabled={form.calcType === "Formula Based"}
                 required={form.calcType !== "Formula Based"} />
@@ -85,7 +121,7 @@ export default function AssignComponentForm({ employee, closeForm, onSave }) {
           </div>
           <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-gray-700">
             <CustomButton color="gray" type="button" onClick={closeForm}>Cancel</CustomButton>
-            <CustomButton color="purple" type="submit">Assign Component</CustomButton>
+            <CustomButton color="purple" type="submit">{isEdit ? "Update Component" : "Assign Component"}</CustomButton>
           </div>
         </form>
       </div>

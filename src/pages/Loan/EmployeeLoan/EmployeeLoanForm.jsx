@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
-import { fetchEmployees } from "../../../services/employeeService";
+import { fetchActiveEmployees } from "../../../services/employeeService";
 import { fetchLoanTypes } from "../../../services/loanTypeService";
 
 export default function EmployeeLoanForm({ closeForm, onSave }) {
@@ -11,7 +11,7 @@ export default function EmployeeLoanForm({ closeForm, onSave }) {
   const [form, setForm] = useState({ emp_id: "", loanTypeId: "", principal: "", installments: 12, startDate: "" });
 
   useEffect(() => {
-    fetchEmployees().then((d)  => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
+    fetchActiveEmployees().then((d)  => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
     fetchLoanTypes().then((d) => setLoanTypes(Array.isArray(d) ? d : [])).catch(console.error);
   }, []);
 

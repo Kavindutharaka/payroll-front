@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
-import { fetchEmployees } from "../../../services/employeeService";
+import { fetchActiveEmployees } from "../../../services/employeeService";
 
 export default function StandingOrderForm({ closeForm, initialData, onSave }) {
   const [employees, setEmployees] = useState([]);
@@ -14,7 +14,7 @@ export default function StandingOrderForm({ closeForm, initialData, onSave }) {
   });
 
   useEffect(() => {
-    fetchEmployees().then((d) => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
+    fetchActiveEmployees().then((d) => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
   }, []);
 
   const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));

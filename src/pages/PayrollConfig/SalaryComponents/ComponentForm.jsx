@@ -50,6 +50,7 @@ export default function ComponentForm({ closeForm, initialData, onSave }) {
               <CustomSelect id="type" value={form.type} onChange={set("type")} required>
                 <option value="Allowance">Allowance</option>
                 <option value="Deduction">Deduction</option>
+                <option value="Employer Contribution">Employer Contribution</option>
               </CustomSelect>
             </div>
           </div>

@@ -7,7 +7,7 @@ import { CustomInput, CustomButton } from "../../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { fetchSalaryComponents, createSalaryComponent, updateSalaryComponent, archiveSalaryComponent } from "../../../services/salaryComponentService";
 
-const typeColor = { Allowance: "success", Deduction: "failure" };
+const typeColor = { Allowance: "success", Deduction: "failure", "Employer Contribution": "indigo" };
 const boolBadge = (v) => <StatusBadge color={v ? "success" : "gray"} className="w-fit text-xs">{v ? "Yes" : "No"}</StatusBadge>;
 
 export default function SalaryComponents() {

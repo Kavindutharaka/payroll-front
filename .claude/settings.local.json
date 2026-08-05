@@ -18,7 +18,20 @@
       "Bash(node fix-labels.js)",
       "Bash(node fix-labels-dynamic.js)",
       "Bash(npm install *)",
-      "Bash(node run_setup.js)"
+      "Bash(node run_setup.js)",
+      "Read(//c/Users/prasa/Documents/Payroll/**)",
+      "Bash(dir \"C:\\\\Users\\\\prasa\\\\Documents\\\\Payroll\")",
+      "Bash(pip install *)",
+      "Bash(cd \"C:/Users/prasa/Documents/Payroll\" && ls -la 2>&1; echo \"---DOWNLOADS---\"; ls -la \"C:/Users/prasa/Downloads\" 2>/dev/null | grep -i system)",
+      "Read(//c/Users/prasa/**)",
+      "Bash(python -c ' *)",
+      "Bash(python)",
+      "Bash(python _simulate.py)",
+      "Bash(ls -la \"D:/Kavindu/ssp/\" 2>&1)",
+      "Bash(npx eslint *)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(python \"C:/Users/prasa/AppData/Local/Temp/claude/D--Kavindu-payroll-front/0935cb1f-ead7-4cd9-9a69-dfc6176a1280/scratchpad/payroll_run_setup.py\")",
+      "Bash(echo \"EXIT=$?\")"
     ]
   }
 }

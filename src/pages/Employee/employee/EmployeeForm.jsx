@@ -31,6 +31,8 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
     employmentType:     initialData?.employmentType     ?? "",
     position:           initialData?.position           ?? "",
     level:              initialData?.level              ?? "",
+    contactNo:          initialData?.contactNo          ?? "",
+    emergencyContactNo: initialData?.emergencyContactNo ?? "",
     basicSalary:        initialData?.basicSalary        ?? "",
     taxMode:            initialData?.taxMode            ?? "",
     epfEtfName:         initialData?.epfEtfName         ?? "",
@@ -156,12 +158,25 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
                   </CustomSelect>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <CustomLabel htmlFor="level">Level</CustomLabel>
-                  <CustomSelect id="level" value={form.level} onChange={set("level")} required>
-                    <option value="">Select Level</option>
-                    {levels.map((l) => <option key={l} value={l}>{l}</option>)}
-                  </CustomSelect>
+                  <CustomLabel htmlFor="contactNo">Contact No</CustomLabel>
+                  <CustomInput id="contactNo" value={form.contactNo} onChange={set("contactNo")} placeholder="e.g. 0771234567" />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <CustomLabel htmlFor="emergencyContactNo">Emergency Contact No</CustomLabel>
+                  <CustomInput id="emergencyContactNo" value={form.emergencyContactNo} onChange={set("emergencyContactNo")}
+                    placeholder="e.g. 0719876543" />
+                </div>
+              </div>
+
+              {/* Level — hidden, reserved for future use */}
+              <div className="hidden">
+                <CustomSelect id="level" value={form.level} onChange={set("level")}>
+                  <option value="">Select Level</option>
+                  {levels.map((l) => <option key={l} value={l}>{l}</option>)}
+                </CustomSelect>
               </div>
 
               <div className="flex flex-col gap-1.5">

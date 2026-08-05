@@ -6,9 +6,9 @@ import AssignComponentForm from "./AssignComponentForm";
 import { CustomInput, CustomButton } from "../../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { fetchEmployees } from "../../../services/employeeService";
-import { fetchStructureByEmployee, createStructureItem, deleteStructureItem } from "../../../services/salaryStructureService";
+import { fetchStructureByEmployee, createStructureItem, updateStructureItem, deleteStructureItem } from "../../../services/salaryStructureService";
 
-const typeColor = { Allowance: "success", Deduction: "failure" };
+const typeColor = { Allowance: "success", Deduction: "failure", "Employer Contribution": "indigo" };
 
 export default function SalaryStructure() {
   const [employees, setEmployees]   = useState([]);
@@ -16,6 +16,7 @@ export default function SalaryStructure() {
   const [selected, setSelected]     = useState(null);
   const [components, setComponents] = useState([]);
   const [showForm, setShowForm]     = useState(false);
+  const [editData, setEditData]     = useState(null);
   const [loadingEmps, setLoadingEmps]   = useState(false);
   const [loadingComps, setLoadingComps] = useState(false);
 
@@ -34,11 +35,17 @@ export default function SalaryStructure() {
     finally { setLoadingComps(false); }
   };
 
-  const selectEmployee = (emp) => { setSelected(emp); setShowForm(false); loadComponents(emp); };
+  const selectEmployee = (emp) => { setSelected(emp); setShowForm(false); setEditData(null); loadComponents(emp); };
+
+  const closeForm = () => { setShowForm(false); setEditData(null); };
 
   const handleSave = async (data) => {
-    try { await createStructureItem(data); setShowForm(false); loadComponents(selected); }
-    catch (err) { console.error(err); }
+    try {
+      if (editData) await updateStructureItem(editData.id, data);
+      else          await createStructureItem(data);
+      closeForm();
+      loadComponents(selected);
+    } catch (err) { console.error(err); }
   };
 
   const handleDelete = async (id) => {
@@ -103,7 +110,7 @@ export default function SalaryStructure() {
                     </p>
                     <p className="text-xs text-gray-500">{selected.emp_id} · Basic: Rs. {Number(selected.basicSalary).toLocaleString()}</p>
                   </div>
-                  <CustomButton color="purple" size="sm" onClick={() => setShowForm(true)}>
+                  <CustomButton color="purple" size="sm" onClick={() => { setEditData(null); setShowForm(true); }}>
                     <HiPlus className="mr-1.5 h-4 w-4" /> Assign Component
                   </CustomButton>
                 </div>
@@ -137,6 +144,10 @@ export default function SalaryStructure() {
                           <CustomTableCell><StatusBadge color={c.epfApplicable ? "success" : "gray"} className="w-fit text-xs">{c.epfApplicable ? "Yes" : "No"}</StatusBadge></CustomTableCell>
                           <CustomTableCell>
                             <div className="flex justify-center gap-2">
+                              <CustomButton size="xs" color="blue" outline pill
+                                onClick={() => { setEditData(c); setShowForm(true); }}>
+                                <HiPencil className="h-3.5 w-3.5" />
+                              </CustomButton>
                               <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(c.id)}>
                                 <HiTrash className="h-3.5 w-3.5" />
                               </CustomButton>
@@ -156,7 +167,8 @@ export default function SalaryStructure() {
       {showForm && (
         <AssignComponentForm
           employee={selected}
-          closeForm={() => setShowForm(false)}
+          closeForm={closeForm}
+          initialData={editData}
           onSave={handleSave}
         />
       )}

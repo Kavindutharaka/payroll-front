@@ -6,6 +6,14 @@ const SP    = 'dbo.payroll_employee_sp';
 export const fetchEmployees = () =>
   execSQL(`SELECT * FROM ${TABLE} WHERE status != 'Deleted' ORDER BY id DESC`);
 
+// Currently-employed staff only — use for new transactions (loans, leave, bank accounts)
+// so resigned employees can't be selected. The full list above still shows everyone.
+export const fetchActiveEmployees = () =>
+  execSQL(
+    `SELECT * FROM ${TABLE} WHERE status = 'Active' ` +
+    `AND (dateOfResignation IS NULL OR dateOfResignation > GETDATE()) ORDER BY emp_id ASC`
+  );
+
 export const createEmployee = (e) =>
   execSQL(
     `EXEC ${SP} @action='INSERT',` +
@@ -15,7 +23,9 @@ export const createEmployee = (e) =>
     `@designation=${esc(e.designation)},@dateOfJoining=${esc(e.dateOfJoining)},` +
     `@dateOfResignation=${esc(e.dateOfResignation)},` +
     `@category=${esc(e.category)},@employmentType=${esc(e.employmentType)},` +
-    `@position=${esc(e.position)},@level=${esc(e.level)},@basicSalary=${num(e.basicSalary)},` +
+    `@position=${esc(e.position)},@level=${esc(e.level)},` +
+    `@contactNo=${esc(e.contactNo)},@emergencyContactNo=${esc(e.emergencyContactNo)},` +
+    `@basicSalary=${num(e.basicSalary)},` +
     `@taxMode=${esc(e.taxMode)},@epfEtf=${bit(e.epfEtf)},@epfEtfName=${esc(e.epfEtfName)},` +
     `@accountName=${esc(e.accountName)},@bank=${esc(e.bank)},` +
     `@branch=${esc(e.branch)},@accountNum=${esc(e.accountNum)},` +
@@ -31,7 +41,9 @@ export const updateEmployee = (id, e) =>
     `@designation=${esc(e.designation)},@dateOfJoining=${esc(e.dateOfJoining)},` +
     `@dateOfResignation=${esc(e.dateOfResignation)},` +
     `@category=${esc(e.category)},@employmentType=${esc(e.employmentType)},` +
-    `@position=${esc(e.position)},@level=${esc(e.level)},@basicSalary=${num(e.basicSalary)},` +
+    `@position=${esc(e.position)},@level=${esc(e.level)},` +
+    `@contactNo=${esc(e.contactNo)},@emergencyContactNo=${esc(e.emergencyContactNo)},` +
+    `@basicSalary=${num(e.basicSalary)},` +
     `@taxMode=${esc(e.taxMode)},@epfEtf=${bit(e.epfEtf)},@epfEtfName=${esc(e.epfEtfName)},` +
     `@accountName=${esc(e.accountName)},@bank=${esc(e.bank)},` +
     `@branch=${esc(e.branch)},@accountNum=${esc(e.accountNum)},` +
