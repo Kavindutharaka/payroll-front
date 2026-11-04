@@ -6,12 +6,15 @@ import { fetchActiveEmployees } from "../../../services/employeeService";
 export default function BankAccountForm({ closeForm, initialData, onSave }) {
   const [employees, setEmployees] = useState([]);
   const [form, setForm] = useState({
-    emp_id:     initialData?.emp_id     ?? "",
-    bank:       initialData?.bank       ?? "",
-    branch:     initialData?.branch     ?? "",
-    accountNum: initialData?.accountNum ?? "",
-    splitType:  initialData?.splitType  ?? "Percentage",
-    splitValue: initialData?.splitValue ?? "",
+    emp_id:      initialData?.emp_id      ?? "",
+    accountName: initialData?.accountName ?? "",
+    bank:        initialData?.bank        ?? "",
+    branch:      initialData?.branch      ?? "",
+    accountNum:  initialData?.accountNum  ?? "",
+    bankCode:    initialData?.bankCode    ?? "",
+    branchCode:  initialData?.branchCode  ?? "",
+    splitType:   initialData?.splitType   ?? "Percentage",
+    splitValue:  initialData?.splitValue  ?? 100,
   });
   const [isDefault, setIsDefault] = useState(initialData?.isDefault ?? false);
 
@@ -53,8 +56,22 @@ export default function BankAccountForm({ closeForm, initialData, onSave }) {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
+            <CustomLabel htmlFor="accountName">Account Name</CustomLabel>
+            <CustomInput id="accountName" value={form.accountName} onChange={set("accountName")} placeholder="e.g. S.R Fernando" required />
+          </div>
+          <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="accountNum">Account Number</CustomLabel>
             <CustomInput id="accountNum" value={form.accountNum} onChange={set("accountNum")} placeholder="e.g. 1234567890" required />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <CustomLabel htmlFor="bankCode">Bank Code</CustomLabel>
+              <CustomInput id="bankCode" value={form.bankCode} onChange={set("bankCode")} placeholder="e.g. 7278" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <CustomLabel htmlFor="branchCode">Branch Code</CustomLabel>
+              <CustomInput id="branchCode" value={form.branchCode} onChange={set("branchCode")} placeholder="e.g. 040" />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">

@@ -21,6 +21,8 @@ import {
   HiRefresh,
   HiPlay,
   HiChevronDown,
+  HiTrendingUp,
+  HiGift,
 } from "react-icons/hi";
 
 const navGroups = [
@@ -90,8 +92,10 @@ const navGroups = [
         label: "Payroll Processing",
         icon: HiPlay,
         children: [
-          { href: "/payroll/run",     label: "Run Payroll", icon: HiPlay         },
-          { href: "/payroll/payslip", label: "Payslips",    icon: HiDocumentText },
+          { href: "/payroll/run",       label: "Run Payroll",     icon: HiPlay         },
+          { href: "/payroll/payslip",   label: "Payslips",        icon: HiDocumentText },
+          { href: "/payroll/increment", label: "Increment Sheet", icon: HiTrendingUp   },
+          { href: "/payroll/bonus",     label: "Bonus Sheet",     icon: HiGift         },
         ],
       },
       { href: "/reports", label: "Reports", icon: HiChartBar },

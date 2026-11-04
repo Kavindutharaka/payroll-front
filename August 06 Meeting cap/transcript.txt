@@ -1,0 +1,94 @@
+Here is the full transcript of the meeting, logically broken down into speaker turns and categorized by the topics discussed. The original mix of Sinhalese and English has been preserved exactly as spoken.
+
+## Full Meeting Transcript
+
+### 1. Employee Status and Filtering
+
+**Client:** 1364 කියලා මෙයාගේ මේ employee master එකේ employee ලඟට ගියාම... තරංග දැන් අපි මේකේ active view employees and the full list කියලා වෙනම එකක් යනවද නැත්නම් active එකේම තමයි තියෙන්නේ?
+
+**Tharanga:** Filtering එකක් දාන්න පුළුවන්. ඔක්කොම තියන්න වෙනවා නම් අපි ෆිල්ටර්ස් යන්න හින්දා ප්‍රශ්නයක් නෑ.
+
+**Client:** Now for example තරංග, now මෙතන කුෂ්ලානි ජයසිංහ ලඟට ගිහිල්ලා if I click on this pen, එතකොට එයාට date of resignation එකක් පේන්නේ but still it's showing as resign. It says resign but date of resigning is not entered. I don't know how Kavindu has put it as resign. එතනට මට ඕනේ මෙතනට resign වෙච්ච date එක දැම්මාම අතන resign කියලා පෙන්නන්න ඕනේ නැහැ. So take the employee out from the payroll.
+
+**Tharanga:** Payroll එකෙන් අයින් වෙයි. අර වෙලා තියෙන අර employee master එකේ පෙන්නනවාමයි එයා ඉන්නවා නේ. Master එකේ තියන්න වෙනවා. එයාගේ අර number sequence එකනේ යන්නේ, නැත්නම් ඒක number sequence එක මේවා වෙනවා. ඒක හින්දා අපි උඩට filtering එකක් දාමු. කවුද active, කවුද resign, both. දෙකම ඕනේ. ඔව්. එතකොට ඔයාට එතනින් උඩින් filter කරලා ගන්න පුළුවන් full list එකක් ඕන නම්.
+
+**Client:** ඒ වගේ work around එකක් ඕකේ නේද නදි ඔයාට?
+**Nadi:** Yeah, can do. Great.
+
+**Tharanga:** So ඒක ඇවිල්ලා තියෙන්නේ insert box age ද? නෑ date of join... නදි ඔයා point by point යන්න නදි. එතකොට අපිට ලේසියි.
+
+**Nadi:** Okay, right. So then first of all ඒකේ initial එක change කරලා date of birth එකයි date of join එකයි දාලා අර date of resignation එක අර විදිහට ඇක්ටිව් කරොතින් එයා කමක් නෑ employee master එකේ පෙන්නුවාට, payroll එකේදි ඒක එතකොට එයාව inactive වෙලා payroll එකෙන් අයින් වෙලා පෙන්නන්න ඕනේ. හරිනේද?
+
+**Kavindu:** Date of resign කියන එක නේද?
+**Nadi:** ඔව් clear.
+**Kavindu:** මල්ලි උඩින් දාන්න මේ... filtering එකක් දාලා, active දාමු. එතකොට active කිව්වහම දැනට active ඉන්න කට්ටිය. Resign කියලා දැම්මොත් පාස්ට් කට්ටිය ඕන නම් resign කියලා හරි දාන්න පුළුවන්. ඊට පස්සේ both දැම්මොත් ඔය දෙගොල්ලොම එනවා. තුනකට දාන්න filtering එක all එකයි, active එකයි, resign එකයි. All දැම්මොත් දෙගොල්ලොම එනවා.
+**Nadi:** එතකොට default එක all ද?
+**Tharanga:** Default එක all තියමු. එතකොට කවුද active ඕන නම් active බලන්න, නැත්නම් resign අය බලන්න ඕන නම් resign බලන්න.
+
+### 2. Contract Employees and Age Tracking
+
+**Client:** එතකොට I need to have a box mentioning the age because we have contract employees. එතකොට contract employees ලගේ at least I can get a statement starting the academic year ඒගොල්ලන්ගේ age එකට අනුව that I have to give them the contract. So renewable ඒවා ඔක්කොම මට master එකෙන් check කරගන්න පුළුවන් option එකක් ගන්න පුළුවන් age එක දාලා.
+
+**Tharanga:** According to the date of birth... අපි date of birth එකට connect කරා නම් හරිනේ. කවිඳු ඒ වෙනුවට date of birth එකට connect කරලා age එක check කරන්න box එකක් දාන්න.
+
+### 3. Basic Salary and Budgetary Allowances
+
+**Client:** Then contract nominal emergency category all fine. මෙතන employee master එකේ basic salary එක දැම්මහම මෙතන දාලා නෑ, budgetary allowance එකේ amount එක මෙතන පෙන්නන්නේ නෑ. ඒ කියන්නේ at a glance මට employee කෙනෙක්ගේ structure එක බලන්න ඕන නම් මට මෙතන basic salary එකත් එක්ක budgetary allowance එක පෙන්නන්නේ නැහැ. ඒකට මම යන්න ඕනේ ඕගොල්ලන්ගේ අර අනිත් salary structure එකට ගිහිල්ලා ඕනේ check කරන්න. Salary component එකට ගිහිල්ලා check කරන්න ඕනේ ඒකේ තියෙනවද නැද්ද කියලා budgetary allowance එකයි මේකයි. So මට මේකේ මේක පෙන්නන්න විදිහක් තියෙනවා නම් salary plus budgetary allowance and if they have some kind of a allowance also fixed allowance... ඒක මේකේ දැම්මා නම් හරි. මොකද එතකොට මට employee කෙනෙක්ගේ මුළු මාසේ එක බැලුවහම එයාට දැන් තියෙන salary එක මෙච්චරයි, budgetary allowance එක මෙච්චරයි, එයාට fixed allowances... variable allowances සමහරවිට වෙනස් වෙනවා, ඒක කමක් නැහැ. At least මට fixed allowance එක...
+
+**Tharanga:** කවිඳු ඒක අපි setup කරලා තියෙන්නේ salary component එකේ දාලා තියෙන්නේ, ඒක manage කරන්න ලේසි හින්දා. එහෙම වුනොත් එතනින් reference එකක් විදිහට තමයි මෙහෙට ගේන්න වෙන්නේ, මේකේ enter කරන්නත් දෙන්නේ නැතුව. මොකද දැන් දෙකක් conflict වුනොත් ප්‍රශ්නයක් නේ.
+
+**Client:** නෑ මෙහෙමයි, දැන් මෙතන basic salary එක කියලා දැන් අපි කියමුකෝ 1st 45,000 ගත්තා කියලා, ඒක එතකොට එයාගේ 42,000 + 2,500 වෙන්න පුළුවන් basic salary කියන එක. එතකොට මේක ඒක දෙකට split වෙලා පෙන්නන්නේ නැහැ මේක බැලුවහම.
+
+**Tharanga:** එහෙම වුනොත් කවිඳු අතනින්ම මෙතනට ගත්තා නම් හරි, ඒකෙ heading...
+**Client:** I need definitely basic and the budgetary allowance තියෙන්නම ඕනේ.
+**Tharanga:** එතන අර create වෙනවනේ අතන. එහෙම වුනොත් එතන reference එකක් විදිහට මෙතනට ගමු. නැතුව මෙතනින් edit කරන්න දෙන්නේ නැතුව. අතනින් තමයි එන්නේ. ඒ කියන්නේ salary component එකෙන් තමයි ගන්නේ. අන්න හරි. මෙතනින් visualize වෙන්න තිබ්බා නම් ඇති. මුකුත් නෑ, මෙතන නිකන් පෙන්නන්න විතරයි ඕනේ. ඒක click කරලා බැලුවහම මෙයාගේ salary එක කීයද කියලා principal අහනවා. So I have to give the proper answer saying මේකයි plus budgetary allowance... එහෙම තමයි fixed allowance මෙච්චරයි, මේ තුන add කරාම මෙච්චරයි කියන එක කියන්න තමයි ඕනේ.
+
+### 4. Payment Methods (Bank vs. Cash)
+
+**Client:** Then EPF ETF name එක තියෙන්න ඕනේ මොකද EPF statement එක... ඊළඟ point එක ඔයා දාලා තියෙන්නේ employee salary cash payments. මොකක්ද ඔයා ඒකෙන් අදහස් කරේ?
+**Nadi:** දැන් ඒක තමයි ඒකේ කියන්නේ දැන් සමහර employees ලට මෙතන bank details නේ තියෙන්නේ. So සමහර අයට cash යන අය ඉන්නවා. So එතකොට කොහොමද cash payment එක මම දාන්නේ කොහාටද? This is only the bank details තියෙන්නේ. සමහර අයගෙන් payment එකක් අරගෙන අපි ඒගොල්ලන්ට cash release කරන වෙලාවල් තියෙනවා සමහර advances ගත්ත අය එහෙම. දෙකම යන වෙලාවල් තියෙනවාද like cash and bank?
+**Tharanga:** නෑ නෑ නෑ, එකයි, cash නම් cash, bank නම් bank. එහෙනම් අපි ඔතන drop down එකක් දාමු කවිඳු select කරන්න, cash නම් එතකොට එතනින් මේ වෙනවා, bank select කරා නම් මේවා ටික bank details enter කරන්න වැටෙනවා. Tick box එකක් දාමු. Cash and bank, cash නම් මොනවත් information enter කරන්නේ නෑනේ just cash කියලා දාන එකනේ.
+
+### 5. Resignations and Open Cheques
+
+**Client:** And තව issue එකක් තියෙනවා මට, මම ඒක මේකේ mention කරලා නැහැ. සමහර අය resign වෙනකොට last month එකේදී අපි bank එකට යවන්නේ නැහැ. මොකද අපිට clearance ගන්න ඕනේ නිසා. So then it is going as an open cheque. එතකොට ඒ open cheque එකටත් මොකක් හරි එකක් තියෙන්න ඕනේ මොකද නැත්නම් අපි check ඒ last month එකේ salary එක open cheque එකක් විදිහට යවලා ඊට පස්සේ ඒගොල්ලො clearance දීලා ID ඔක්කොම library books return කරාට පස්සේ තමයි අපි cheque එක release කරන්නේ. එතකොට මට ඒකටත් option එකක් තියෙන්න ඕනේ bank එකට නොයවා cash ත් නැතුව cheque එකක් විදිහට යන්න.
+
+**Tharanga:** ඒක නදි අපි මෙහෙම කරමුද, ඒක අපි පොඩ්ඩක් resign වෙනකොට අපි ඔතන status change කරනවානේ employee ගේ resign කියලා. එතකොට resign වෙන process එකක් තියෙනවානේ, එයාට laptop දීලා ඇති, fixed assets දීලා ඇති. එතකොට ඒක අපි process එක පොඩ්ඩක් මේ list down කරමු මොනවා මොනවාද වෙන්නේ කියලා. එතකොට අපි resign කිව්ව ගමන් මේකේ status change එකත් එක්ක ඔයාගේ requirements ටික fulfill වෙන්න ඒකේ points ටික මේ පැත්තට ගේමු.
+
+**Client:** මේකයි ප්‍රශ්නේ, දැන් resign කියන්නේ අපි කියමුකෝ දැන් මේ resignation date එක දැන් අපිට දීලා තියෙනවා නම් august 30th කියලා අපි usually salaries හදන්නේ 20th විතර වෙද්දි මොකද අපි bank කරන්නේ 23rd, 24th විතර වෙනකොට. So එතකොට එයාගේ clearance ඔක්කොම අරගන්නේ අපි අර එයාගේ cheque එක ready වෙන august 30th වලට. එතකොට මම මෙතන process කරනකොට ඒක තියෙන්න ඕනේ payroll එකෙන් යන්නේ cheque එකක් කියලා.
+
+**Tharanga:** එතකොට කොහොමත් අර වගේ calculate වෙනවා, bank transfer එකක් නෙමෙයි වෙන්නේ... ඔයාට පුළුවන් නම් අර cash තියෙනවා වගේම box එකක් දාලා මට open cheque කියලා හරි මොකක් හරි වෙනම option එකක් දෙන්න, bank, cash, cheque or other bank කියලා. තුනක් තිබුනොත් ඒකෙන් select වෙනවා නම් then that's fine.
+
+**Tharanga:** ඒ box එක අපිට දෙන්න පුළුවන් කිව්වොත් එතකොට ඔයා කොහෙන්ද cross check කරගන්නේ එයාගේ දීපු assets එහෙම return වුණා කියන එක මේකේ mention වෙන්නේ නෑනේ එතකොට.
+**Client:** ඒක අර clearance ඒවා තමයි යන්නේ. මට ආවට පස්සේ තමයි I am instructing the accounts people to check, release the cheque කියලා. එතකන් අපි cheque එක තියාගන්නවා. ඒගොල්ලන්ගේ එලියෙන් open ලියලා තියාගන්නවා. ඔක්කොම clearance ආවට පස්සේ තමයි ඒක clear කරන්නේ.
+**Tharanga:** හරි එහෙනම් අර cash වගේම තව box එකක් දාමුකෝ. Boxes තුනක් දාමු. Cash, bank, check. ඔය තුන එන්න.
+**Kavindu:** එතකොට cash, bank, check කියලා check කිව්වට පස්සේ ඕන check number එකයි bank ඒවා ඒ ටික ඕනද?
+**Client:** නෑ නෑ, ඒවත් system එකේ ඒවා යනවා නම් ඕගොල්ලන් දාන්න ඕන නම් ඒක දාන්න, නැත්නම් open check. මොනවා mode of payment එක විතරයිනේ. ඒකත් ඒකත් මිස් නදි අපි decide කරන්න ඕනේ කොහොමද අර bank එකට bulk payment එකනේ අපේ යන්නේ salary. ඒක අපි මොනවා හරි changes මේ system එක ඇතුලේ කරනවාද මොකද දැන් යන්නේ සම්පත් එකට bulk එක යන්නේ. අපි hard copy එක වෙනම යවනවා, email එක වෙනම යවනවා. එතකොට ඒගොල්ලන් එහෙම නම් credit කරලා දාන්න.
+
+**Tharanga:** නෑ ඒකට system එකේ තියෙනවා නේද bank transaction එකට දැන් නිකන් check එකක් කියලා යන්නේ නෑ අර bulk payment එක තමයි transfer වෙන්නේ. ඒ කියන්නේ ඒගොල්ලන්ගේ bank accounts වලට තමයි individual අර මම කියන්නේ අන්තිම කොනේදී payment එක යන තැන පොඩි අපි ඒක හදාගන්න ඕනේ අන්තිමට පස්සේ ඉතින් system එක හැදුවට පස්සේ decide කරමු එහෙම වුනොත් අර categorize කරලා දාන්න විදිය...
+**Client:** ඒක තියෙනවා නේද system එකේ reports වල තියෙනවා ඒක. Reports වල තියෙනවා ඕගොල්ලන්ගේ ඒක, bank එකේ මට අර මේ තියෙන bank details ටික මේ මේ ඒ ඕන columns ටික තමයි මම දාලා තියෙන්නේ. ඒකට හරියන excel sheet එකක් තමයි create වෙන්න ඕනේ.
+
+### 6. Salary Structures and Taxes/EPF
+
+**Client:** Salary structure එකේ තියෙන එක දැන් මේකට අපි හිතමුකෝ මම අන්තිමටම දාලා තියෙනවා අර අපි september වල increments යනවා. එතකොට december වල bonus එකක් යනවා. එතකොට ඒකට වෙනම මොකක් හරි field එකක් එනවද මේ salary structure එකේ මෙතන තියෙන component වලින්මද ඒක indicate වෙන්නේ? මොකද salary slip එකට යන්නේ මෙතන තියෙන components විතරයි.
+
+**Tharanga:** In the month of september, I wanted to have an increment separate column to show them that this is the amount that we are giving as increment කියලා. එතකොට දැන් මේ තියෙන components ටික තමයි for example ඒක salary slip එකට යන්නේ. එතකොට කොහොමද ඒක පෙන්නන්නේ? හැබැයි tax calculation එකට increment එකක් මේ වෙනවා නේද? එනවා එනවා. අපි එතකොට නිකන් ඒක field එකක් වගේ තමයි දාන්න වෙන්නේ. මොකද calculation එක අතනින්නේ වෙන්නේ. මේ එතකොට නිකන් reference field එකක් වගේ තමයි දාන්න වෙන්නේ මෙච්චරක් වැඩි වුණා කියන දේ. මොකද නැත්නම් අරක කැඩෙන්න ඕනේ calculation.
+
+**Client:** මොකද ඒක september month එකේදී මම කලින් කරේ september month එකේදී ඒක පෙන්නලා increment value එක කියලා. ඒක ආපහු reverse කරනවා October month එකේදී ආපහු basic salary එකට add කරලා. මට ඒක එහෙම නොකර කරන්න මොකක් හරි පිළිවෙලක් තියෙනවද?
+
+**Tharanga:** අපිට මෙතන ඒක දෙයක් කරන්න පුළුවන් මෙතන allowance category එකේ යටතේ increment කියලා දාලා, increment එක මේ මේක type component එකක් විදිහට හදලා ඔය ගාණ දාලා, හැබැයි ඊළඟ මන්ත් එකේ ඒක inactive කරලා දාන්නම වෙනවා නේ, මොකද basic එකට add වෙන හින්දා ඒක කරන්නම වෙනවා නේ. එහෙනම් ඒක කරමුද? ඒකට වෙන කරන්න දෙයක් නෑ ඒකට.
+
+**Client:** For example now, first thing is now මේ salary structure එක now I am doing for the month of August කියමුකෝ. එතකොට මේක මම August payroll එක කියලා කොහේ හරි save කරන්න විදිහක් තියෙනවද? Because when the auditors come they are asking for the payroll, hard copy.
+
+**Tharanga:** Payroll එක run වෙනවා, auto save වෙනවා. Month එකත් එක්ක තමයි save වෙන්නේ. ඔව්, ඒක report එකෙන් ගන්නත් පුළුවන් run payroll එකේ මේ කොහොමත් පෙන්නනවා draft එකක් විදිහට. මේක print වුනාට පස්සේ ඒ month එකේ finish වෙනවා. ඊට පස්සේ ඔය මෙතන date එකෙන් select කරාම month එක පෙන්නනවා ඒ payroll එක. ඊට අමතරව report එකක් ගන්නත් පුළුවන්.
+
+**Client:** හරි, එතකොට ඒ draft එකට අමතරව දැන් මේ මේ සම්පූර්ණ මේ තියෙන මේ payroll එක මේ ඒකේ adjustments කරපු ඒවා ඔක්කොම ටික මට බලන්න පුළුවන්ද කලින් පස්සේ මාසෙකට ගිහිල්ලා මේ මාසේ කරපු adjustments මේවයි කියලා?
+**Tharanga:** දැන් මොකද අපි සාමාන්‍යයෙන් gross salaries දෙක comparison එකක් විදිහට අරගෙන තමයි...
+
+### 7. Budgetary Allowance Components
+
+**Client:** මේ මෙතන දාලා තියෙන්නේ ඔක්කොම change වෙන්න ඕනේ ඒ මම කියපු විදිහට.
+**Tharanga:** ඔයා කියන්නේ සම්පූර්ණ list එකම allowances කියලා අපි අරගෙන type එක allowance නම් අපි ඔයාගේ rationale එක apply කරන්න. හරි. එතකොට type එක allowances නම් tax එක yes EPF no.
+**Nadi:** Budgetary allowance, tax එක yes EPF yes. දෙකටම yes වෙන්න ඕනේ. Form teacher allowance tax එක yes, EPF yes. EPF එක no වෙන්න ඕනේ එතන.
+
+**Tharanga:** මේ list එකට excel එකකට අරගෙන දාලා දෙන්න පුළුවන්ද නදි එතකොට අපිට එතකොට clear.

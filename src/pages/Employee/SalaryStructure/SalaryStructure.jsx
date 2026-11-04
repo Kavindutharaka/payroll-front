@@ -2,13 +2,19 @@ import { useState, useEffect } from "react";
 import { StatusBadge } from "../../../components/StatusBadge";
 import Layout from "../../../components/Layout";
 import { HiSearch, HiCurrencyDollar, HiPencil, HiPlus, HiTrash } from "react-icons/hi";
+import { displayName } from "../../Payroll/Payslip/Payslip";
 import AssignComponentForm from "./AssignComponentForm";
 import { CustomInput, CustomButton } from "../../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { fetchEmployees } from "../../../services/employeeService";
-import { fetchStructureByEmployee, createStructureItem, updateStructureItem, deleteStructureItem } from "../../../services/salaryStructureService";
+import { fetchStructureByEmployee, createStructureItem, updateStructureItem, deleteStructureItem, paidMonthsText } from "../../../services/salaryStructureService";
 
 const typeColor = { Allowance: "success", Deduction: "failure", "Employer Contribution": "indigo" };
+const shortDate = (v) => {
+  if (!v) return "";
+  const [y, m, d] = String(v).slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+};
 
 export default function SalaryStructure() {
   const [employees, setEmployees]   = useState([]);
@@ -48,15 +54,25 @@ export default function SalaryStructure() {
     } catch (err) { console.error(err); }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Remove this component?")) return;
-    try { await deleteStructureItem(id); loadComponents(selected); } catch (err) { console.error(err); }
+  const handleDelete = async (c) => {
+    const amount = Number(c.value || 0).toLocaleString();
+    if (!window.confirm(
+      `Remove "${c.componentName}" (${c.type}, Rs. ${amount}) from this employee?
+
+` +
+      `This cannot be undone, and the next payroll recalculation will drop it.`
+    )) return;
+    try { await deleteStructureItem(c.id); loadComponents(selected); } catch (err) { console.error(err); }
   };
 
-  const filtered = employees.filter((e) =>
-    `${e.firstName} ${e.surName}`.toLowerCase().includes(search.toLowerCase()) ||
-    e.emp_id?.toLowerCase().includes(search.toLowerCase())
-  );
+  // typing 369 means employee 369 only - not 1369 as well, which is how the
+  // wrong person's structure got opened
+  const filtered = employees.filter((e) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    if (/^\d+$/.test(q)) return String(e.emp_id) === q;
+    return `${displayName(e)} ${e.firstName ?? ""} ${e.surName ?? ""}`.toLowerCase().includes(q);
+  });
 
   return (
     <Layout>
@@ -85,7 +101,7 @@ export default function SalaryStructure() {
                     selected?.id === emp.id ? "bg-purple-50 dark:bg-purple-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700"
                   }`}>
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                    {emp.initial} {emp.firstName} {emp.surName}
+                    {displayName(emp)}
                   </p>
                   <span className="font-mono text-xs text-purple-500">{emp.emp_id}</span>
                   <p className="mt-1 text-xs text-gray-500">Basic: Rs. {Number(emp.basicSalary).toLocaleString()}</p>
@@ -106,7 +122,7 @@ export default function SalaryStructure() {
                 <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700">
                   <div>
                     <p className="font-semibold text-gray-800 dark:text-white">
-                      {selected.initial} {selected.firstName} {selected.surName}
+                      {displayName(selected)}
                     </p>
                     <p className="text-xs text-gray-500">{selected.emp_id} · Basic: Rs. {Number(selected.basicSalary).toLocaleString()}</p>
                   </div>
@@ -122,6 +138,7 @@ export default function SalaryStructure() {
                         <CustomTableHeadCell>Type</CustomTableHeadCell>
                         <CustomTableHeadCell>Calculation</CustomTableHeadCell>
                         <CustomTableHeadCell>Value</CustomTableHeadCell>
+                        <CustomTableHeadCell>Effective</CustomTableHeadCell>
                         <CustomTableHeadCell>Taxable</CustomTableHeadCell>
                         <CustomTableHeadCell>EPF</CustomTableHeadCell>
                         <CustomTableHeadCell className="text-center">Actions</CustomTableHeadCell>
@@ -129,9 +146,9 @@ export default function SalaryStructure() {
                     </CustomTableHead>
                     <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
                       {loadingComps ? (
-                        <CustomTableRow><CustomTableCell colSpan={7} className="py-6 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
+                        <CustomTableRow><CustomTableCell colSpan={8} className="py-6 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
                       ) : components.length === 0 ? (
-                        <CustomTableRow><CustomTableCell colSpan={7} className="py-8 text-center text-sm text-gray-400">No components assigned yet.</CustomTableCell></CustomTableRow>
+                        <CustomTableRow><CustomTableCell colSpan={8} className="py-8 text-center text-sm text-gray-400">No components assigned yet.</CustomTableCell></CustomTableRow>
                       ) : components.map((c) => (
                         <CustomTableRow key={c.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
                           <CustomTableCell className="text-sm font-medium text-gray-800 dark:text-gray-200">{c.componentName}</CustomTableCell>
@@ -139,6 +156,12 @@ export default function SalaryStructure() {
                           <CustomTableCell className="text-xs text-gray-500">{c.calcType}</CustomTableCell>
                           <CustomTableCell className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                             {c.calcType === "Fixed Amount" ? `Rs. ${Number(c.value).toLocaleString()}` : `${c.value}%`}
+                          </CustomTableCell>
+                          <CustomTableCell className="whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">
+                            {c.effectiveTo
+                              ? <>{shortDate(c.effectiveFrom)} – {shortDate(c.effectiveTo)}
+                                  <p className="text-purple-600 dark:text-purple-300">{paidMonthsText(c.effectiveFrom, c.effectiveTo)}</p></>
+                              : c.effectiveFrom ? `from ${shortDate(c.effectiveFrom)}` : "—"}
                           </CustomTableCell>
                           <CustomTableCell><StatusBadge color={c.taxable ? "warning" : "gray"} className="w-fit text-xs">{c.taxable ? "Yes" : "No"}</StatusBadge></CustomTableCell>
                           <CustomTableCell><StatusBadge color={c.epfApplicable ? "success" : "gray"} className="w-fit text-xs">{c.epfApplicable ? "Yes" : "No"}</StatusBadge></CustomTableCell>
@@ -148,7 +171,7 @@ export default function SalaryStructure() {
                                 onClick={() => { setEditData(c); setShowForm(true); }}>
                                 <HiPencil className="h-3.5 w-3.5" />
                               </CustomButton>
-                              <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(c.id)}>
+                              <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(c)}>
                                 <HiTrash className="h-3.5 w-3.5" />
                               </CustomButton>
                             </div>

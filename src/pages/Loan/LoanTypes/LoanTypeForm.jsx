@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
+import { fetchSalaryComponents } from "../../../services/salaryComponentService";
 
-const deductionComponents = ["Loan Installment", "Salary Advance Deduction", "NOPAY Deduction"];
 
 export default function LoanTypeForm({ closeForm, initialData, onSave }) {
   const [form, setForm] = useState({
@@ -12,6 +12,16 @@ export default function LoanTypeForm({ closeForm, initialData, onSave }) {
     installmentMethod: initialData?.installmentMethod ?? "Equal Monthly",
     linkedComponent:   initialData?.linkedComponent   ?? "",
   });
+  // Deduction lines come from Payroll Config → Salary Components, the same
+  // master the Salary Structure screen uses. Create one there and it appears
+  // here on its own — no code change, and the two lists cannot drift apart.
+  const [deductions, setDeductions] = useState([]);
+  useEffect(() => {
+    fetchSalaryComponents()
+      .then((d) => setDeductions((Array.isArray(d) ? d : []).filter((c) => c.type === "Deduction")))
+      .catch(() => setDeductions([]));
+  }, []);
+
   const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
   const handleSubmit = (e) => { e.preventDefault(); onSave(form); };
 
@@ -45,17 +55,35 @@ export default function LoanTypeForm({ closeForm, initialData, onSave }) {
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="installmentMethod">Installment Method</CustomLabel>
             <CustomSelect id="installmentMethod" value={form.installmentMethod} onChange={set("installmentMethod")}>
+              {/* the three types were saved with a free-text note in this field;
+                  keep it selectable so opening Edit does not quietly discard it */}
+              {form.installmentMethod &&
+                !["Equal Monthly", "Lump Sum", "Custom"].includes(form.installmentMethod) && (
+                <option value={form.installmentMethod}>{form.installmentMethod}</option>
+              )}
               <option value="Equal Monthly">Equal Monthly</option>
               <option value="Lump Sum">Lump Sum</option>
               <option value="Custom">Custom</option>
             </CustomSelect>
+            <p className="text-xs text-gray-400">
+              Only Equal Monthly is applied today — total payable divided by the number
+              of installments.
+            </p>
           </div>
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="linkedComponent">Deduction Component Link</CustomLabel>
             <CustomSelect id="linkedComponent" value={form.linkedComponent} onChange={set("linkedComponent")}>
               <option value="">Select Component</option>
-              {deductionComponents.map((c) => <option key={c} value={c}>{c}</option>)}
+              {/* keep whatever was saved selectable, even if it is no longer a component */}
+              {form.linkedComponent && !deductions.some((c) => c.name === form.linkedComponent) && (
+                <option value={form.linkedComponent}>{form.linkedComponent}</option>
+              )}
+              {deductions.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
             </CustomSelect>
+            <p className="text-xs text-gray-400">
+              Which payslip line the installments show on. Add a new one in
+              Payroll Config → Salary Components with Type “Deduction”.
+            </p>
           </div>
           <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-gray-700">
             <CustomButton color="gray" type="button" onClick={closeForm}>Cancel</CustomButton>

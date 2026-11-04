@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomButton, CustomToggle } from "../../../components/FormFields";
 import { fetchSalaryComponents } from "../../../services/salaryComponentService";
+import { paidMonthsText } from "../../../services/salaryStructureService";
 
 const calcTypes = ["Fixed Amount", "Percentage of Basic", "Percentage of Gross", "Formula Based"];
 
@@ -14,6 +15,7 @@ export default function AssignComponentForm({ employee, closeForm, onSave, initi
     calcType:      initialData?.calcType      ?? "Fixed Amount",
     value:         initialData?.value         ?? "",
     effectiveFrom: initialData?.effectiveFrom?.slice?.(0, 10) ?? "",
+    effectiveTo:   initialData?.effectiveTo?.slice?.(0, 10) ?? "",
   });
   const [taxable, setTaxable] = useState(!!initialData?.taxable);
   const [epf, setEpf]         = useState(!!initialData?.epfApplicable);
@@ -44,9 +46,12 @@ export default function AssignComponentForm({ employee, closeForm, onSave, initi
     }
   };
 
+  const badRange = form.effectiveTo && form.effectiveFrom && form.effectiveTo < form.effectiveFrom;
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ ...form, emp_id: employee.emp_id, taxable, epfApplicable: epf, etfApplicable: etf });
+    if (badRange) return;
+    onSave({ ...form, effectiveTo: form.effectiveTo || null, emp_id: employee.emp_id, taxable, epfApplicable: epf, etfApplicable: etf });
   };
 
   const empName = `${employee?.initial ?? ""} ${employee?.firstName ?? ""} ${employee?.surName ?? ""}`.trim();
@@ -103,9 +108,28 @@ export default function AssignComponentForm({ employee, closeForm, onSave, initi
                 required={form.calcType !== "Formula Based"} />
             </div>
           </div>
+          {/* Allowances such as Club & Societies (16th to 15th) and Sports (11th to
+              10th) cover a period of their own, so a component can have an end date */}
           <div className="flex flex-col gap-1.5">
-            <CustomLabel htmlFor="effectiveFrom">Effective From</CustomLabel>
-            <CustomInput id="effectiveFrom" type="date" value={form.effectiveFrom} onChange={set("effectiveFrom")} required />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <CustomLabel htmlFor="effectiveFrom">Effective From</CustomLabel>
+                <CustomInput id="effectiveFrom" type="date" value={form.effectiveFrom} onChange={set("effectiveFrom")} required />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <CustomLabel htmlFor="effectiveTo">Effective To <span className="font-normal text-gray-400">(optional)</span></CustomLabel>
+                <CustomInput id="effectiveTo" type="date" value={form.effectiveTo} onChange={set("effectiveTo")} />
+              </div>
+            </div>
+            {form.effectiveFrom && (
+              <p className={`text-xs ${badRange ? "text-red-600" : "text-purple-600 dark:text-purple-300"}`}>
+                {paidMonthsText(form.effectiveFrom, form.effectiveTo)}
+              </p>
+            )}
+            <p className="text-xs text-gray-400">
+              Leave To empty for an allowance that carries on. With a To date, each period is paid in the
+              month it closes — 16 Sep to 15 Oct is paid in October.
+            </p>
           </div>
           <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700">
             {[

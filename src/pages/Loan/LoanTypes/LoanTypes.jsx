@@ -69,7 +69,7 @@ export default function LoanTypes() {
                     <CustomTableCell className="text-sm text-gray-400">{idx + 1}</CustomTableCell>
                     <CustomTableCell className="text-sm font-medium text-gray-800 dark:text-gray-200">{lt.name}</CustomTableCell>
                     <CustomTableCell>
-                      <StatusBadge color={lt.interestRate == 0 ? "success" : "warning"} className="w-fit text-xs">{lt.interestRate}%</StatusBadge>
+                      <StatusBadge color={Number(lt.interestRate) === 0 ? "success" : "warning"} className="w-fit text-xs">{lt.interestRate}%</StatusBadge>
                     </CustomTableCell>
                     <CustomTableCell className="text-sm font-semibold text-gray-700 dark:text-gray-200">Rs. {Number(lt.maxAmount).toLocaleString()}</CustomTableCell>
                     <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{lt.installmentMethod}</CustomTableCell>

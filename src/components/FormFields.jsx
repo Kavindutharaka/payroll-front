@@ -4,7 +4,8 @@
  *
  * Exports: CustomLabel, CustomInput, CustomSelect, CustomTextarea, CustomButton, CustomToggle
  */
-import { HiChevronDown } from "react-icons/hi";
+import { useState, useEffect, useRef } from "react";
+import { HiChevronDown, HiCalendar } from "react-icons/hi";
 
 /* ─── CustomLabel — replaces <Label> ────────────────────────────────────── */
 export function CustomLabel({ htmlFor, className = "", children }) {
@@ -27,8 +28,85 @@ const base =
   "dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 " +
   "dark:placeholder-gray-500 dark:focus:border-purple-400";
 
+/* ─── dates ──────────────────────────────────────────────────────────────
+ * A native <input type="date"> renders in the BROWSER's locale, not the page's
+ * — Chrome on an en-US profile shows mm/dd/yyyy however the document is tagged,
+ * so setting lang on <html> does nothing. The school works in dd/mm/yyyy, so a
+ * date field is a text box in that format with the native picker one click
+ * away. The value in and the value out stay yyyy-mm-dd, so callers don't change.
+ * ----------------------------------------------------------------------- */
+const toDisplay = (iso) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? ""));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
+};
+
+const toISO = (text) => {
+  const m = /^(\d{1,2})[\s/.-]+(\d{1,2})[\s/.-]+(\d{4})$/.exec(String(text ?? "").trim());
+  if (!m) return null;
+  const [, d, mo, y] = m.map(Number);
+  const dt = new Date(y, mo - 1, d);
+  // rejects 31/02/2026 and friends, which Date would silently roll forward
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+  return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+};
+
+function DateInput({ className = "", value, onChange, id, name, disabled, ...rest }) {
+  const [text, setText] = useState(toDisplay(value));
+  const picker = useRef(null);
+
+  useEffect(() => { setText(toDisplay(value)); }, [value]);
+
+  const emit = (iso) => onChange?.({ target: { value: iso, id, name } });
+
+  const commit = () => {
+    const trimmed = text.trim();
+    if (trimmed === "") { emit(""); return; }
+    const iso = toISO(trimmed);
+    if (iso) { setText(toDisplay(iso)); emit(iso); }
+    else setText(toDisplay(value));   // unreadable — restore what was there
+  };
+
+  return (
+    <div className="relative">
+      <input
+        {...rest}
+        id={id}
+        name={name}
+        type="text"
+        inputMode="numeric"
+        placeholder="dd/mm/yyyy"
+        disabled={disabled}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); } }}
+        className={`${base} pr-9 ${className}`}
+      />
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => { const el = picker.current; if (!el) return; el.showPicker ? el.showPicker() : el.click(); }}
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-purple-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:text-purple-400"
+        aria-label="Open calendar"
+      >
+        <HiCalendar className="h-4 w-4" />
+      </button>
+      <input
+        ref={picker}
+        type="date"
+        tabIndex={-1}
+        aria-hidden="true"
+        value={String(value ?? "").slice(0, 10)}
+        onChange={(e) => emit(e.target.value)}
+        className="pointer-events-none absolute right-2 bottom-0 h-0 w-0 opacity-0"
+      />
+    </div>
+  );
+}
+
 /* ─── CustomInput — replaces <TextInput> ────────────────────────────────── */
 export function CustomInput({ icon: Icon, className = "", sizing, ...props }) {
+  if (props.type === "date") return <DateInput className={className} {...props} />;
   if (Icon) {
     return (
       <div className="relative">

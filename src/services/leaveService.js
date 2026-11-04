@@ -17,3 +17,17 @@ export const updateLeaveStatus = (id, status) =>
 
 export const deleteLeave = (id) =>
   execSQL(`EXEC ${SP} @action='DELETE',@id=${id}`);
+
+/* Approved no-pay leave days falling in a given month, per employee.
+ * Used to pre-fill the No Pay column when payroll is calculated —
+ * the figure stays editable afterwards. */
+export const fetchNoPayDaysForMonth = (runMonth) =>
+  execSQL(`
+    SELECT lv.emp_id, SUM(ISNULL(lv.days, 0)) AS noPayDays
+    FROM dbo.payroll_leave lv
+    INNER JOIN dbo.payroll_leave_type lt ON lt.name = lv.leaveType AND lt.status <> 'Deleted'
+    WHERE lv.status = 'Approved'
+      AND lt.affectsSalary = 1
+      AND CONVERT(varchar(7), lv.dateFrom, 120) = ${esc(runMonth)}
+    GROUP BY lv.emp_id
+  `);

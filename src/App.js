@@ -30,6 +30,8 @@ import StandingOrders from './pages/Payment/StandingOrders/StandingOrders';
 // Payroll Processing
 import RunPayroll from './pages/Payroll/RunPayroll/RunPayroll';
 import Payslip from './pages/Payroll/Payslip/Payslip';
+import IncrementSheet from './pages/Payroll/Increment/IncrementSheet';
+import BonusSheet from './pages/Payroll/Bonus/BonusSheet';
 
 // Reports
 import Reports from './pages/Reports/Reports';
@@ -68,6 +70,8 @@ function App() {
         {/* Payroll Processing */}
         <Route path="/payroll/run" element={<RunPayroll />} />
         <Route path="/payroll/payslip" element={<Payslip />} />
+        <Route path="/payroll/increment" element={<IncrementSheet />} />
+        <Route path="/payroll/bonus" element={<BonusSheet />} />
 
         {/* Reports */}
         <Route path="/reports" element={<Reports />} />

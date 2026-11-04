@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { StatusBadge } from "../../../components/StatusBadge";
 import { HiPlus, HiPencil, HiTrash, HiSearch } from "react-icons/hi";
+import { displayName } from "../../Payroll/Payslip/Payslip";
 import EmployeeForm from "./EmployeeForm";
 import { CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
@@ -17,15 +18,16 @@ const categoryColor = {
   "Battaramulla - Administrative Staff": "cyan",
   "Battaramulla - Support Staff":      "cyan",
 };
-const typeColor   = { Permanent: "success", Temporary: "warning" };
+const typeColor   = { Permanent: "success", "Permanent Staff on Contract": "indigo", Temporary: "warning" };
 const statusColor = { Active: "success", Resigned: "failure", Notice: "warning", Inactive: "failure" };
 
-// An employee with a resignation date is no longer "Active".
-// Future-dated resignation = still working out their notice period.
+// Resignation is driven entirely by the date — entering one marks the
+// employee resigned and drops them out of payroll. A future date means
+// they are still working out their notice period.
 const displayStatus = (emp) => {
-  if (!emp.dateOfResignation) return emp.status ?? "Active";
+  if (!emp.dateOfResignation) return "Active";
   const resign = new Date(emp.dateOfResignation);
-  if (isNaN(resign)) return emp.status ?? "Active";
+  if (isNaN(resign)) return "Active";
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return resign <= today ? "Resigned" : "Notice";
@@ -38,6 +40,7 @@ export function EmployeeTable() {
   const [editData, setEditData]   = useState(null);
   const [search, setSearch]       = useState("");
   const [filterCat, setFilterCat] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const load = async () => {
     setLoading(true);
@@ -82,10 +85,17 @@ export function EmployeeTable() {
   const handleAdd  = ()    => { setEditData(null); setOpenModal(true); };
 
   const filtered = employees.filter((e) => {
-    const name = `${e.firstName} ${e.surName}`.toLowerCase();
-    const matchSearch = name.includes(search.toLowerCase()) || e.emp_id?.toLowerCase().includes(search.toLowerCase());
+    // a number is an EPF number and is matched whole; words search both name forms
+    const q = search.trim().toLowerCase();
+    const name = `${displayName(e)} ${e.firstName ?? ""} ${e.surName ?? ""}`.toLowerCase();
+    const matchSearch = !q || (/^\d+$/.test(q) ? String(e.emp_id) === q : name.includes(q));
     const matchCat = filterCat === "all" || e.category === filterCat;
-    return matchSearch && matchCat;
+    const st = displayStatus(e);
+    const matchStatus =
+      filterStatus === "all" ? true :
+      filterStatus === "active" ? st === "Active" || st === "Notice" :
+      st === "Resigned";
+    return matchSearch && matchCat && matchStatus;
   });
 
   return (
@@ -104,22 +114,27 @@ export function EmployeeTable() {
       <div className="flex flex-wrap items-center gap-3">
         <CustomInput icon={HiSearch} placeholder="Search by name or ID..." value={search}
           onChange={(e) => setSearch(e.target.value)} sizing="sm" className="w-64" />
+        <CustomSelect value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} sizing="sm">
+          <option value="all">All Employees</option>
+          <option value="active">Active Only</option>
+          <option value="resigned">Resigned Only</option>
+        </CustomSelect>
         <CustomSelect value={filterCat} onChange={(e) => setFilterCat(e.target.value)} sizing="sm">
           <option value="all">All Categories</option>
           <optgroup label="Main School — Academic">
-            <option value="Main - Upper School">Upper School</option>
-            <option value="Main - Junior School">Junior School</option>
-            <option value="Main - Elementary School">Elementary School</option>
+            <option value="Main - Upper School">Main — Upper School</option>
+            <option value="Main - Junior School">Main — Junior School</option>
+            <option value="Main - Elementary School">Main — Elementary School</option>
           </optgroup>
           <optgroup label="Main School">
-            <option value="Main - Non-Academic Staff">Non-Academic Staff</option>
-            <option value="Main - Administrative Staff">Administrative Staff</option>
-            <option value="Main - Support Staff">Support Staff</option>
+            <option value="Main - Non-Academic Staff">Main — Non-Academic Staff</option>
+            <option value="Main - Administrative Staff">Main — Administrative Staff</option>
+            <option value="Main - Support Staff">Main — Support Staff</option>
           </optgroup>
           <optgroup label="Battaramulla School">
-            <option value="Battaramulla - Academic Staff">Academic Staff</option>
-            <option value="Battaramulla - Administrative Staff">Administrative Staff</option>
-            <option value="Battaramulla - Support Staff">Support Staff</option>
+            <option value="Battaramulla - Academic Staff">Battaramulla — Academic Staff</option>
+            <option value="Battaramulla - Administrative Staff">Battaramulla — Administrative Staff</option>
+            <option value="Battaramulla - Support Staff">Battaramulla — Support Staff</option>
           </optgroup>
         </CustomSelect>
       </div>
@@ -132,10 +147,14 @@ export function EmployeeTable() {
                 <CustomTableHeadCell className="w-10">#</CustomTableHeadCell>
                 <CustomTableHeadCell>Emp ID</CustomTableHeadCell>
                 <CustomTableHeadCell>Full Name</CustomTableHeadCell>
+                <CustomTableHeadCell>Initials</CustomTableHeadCell>
                 <CustomTableHeadCell>NIC</CustomTableHeadCell>
                 <CustomTableHeadCell>Category</CustomTableHeadCell>
                 <CustomTableHeadCell>Type</CustomTableHeadCell>
                 <CustomTableHeadCell>Basic Salary</CustomTableHeadCell>
+                <CustomTableHeadCell>Budgetary</CustomTableHeadCell>
+                <CustomTableHeadCell>Allowances</CustomTableHeadCell>
+                <CustomTableHeadCell>Total Package</CustomTableHeadCell>
                 <CustomTableHeadCell>Contact No</CustomTableHeadCell>
                 <CustomTableHeadCell>EPF/ETF</CustomTableHeadCell>
                 <CustomTableHeadCell>Status</CustomTableHeadCell>
@@ -145,7 +164,7 @@ export function EmployeeTable() {
             <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
               {loading ? (
                 <CustomTableRow>
-                  <CustomTableCell colSpan={11} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell>
+                  <CustomTableCell colSpan={15} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell>
                 </CustomTableRow>
               ) : filtered.map((emp, idx) => (
                 <CustomTableRow key={emp.id}
@@ -153,8 +172,9 @@ export function EmployeeTable() {
                   <CustomTableCell className="text-sm text-gray-400">{idx + 1}</CustomTableCell>
                   <CustomTableCell className="font-mono text-sm font-medium text-purple-600 dark:text-purple-400">{emp.emp_id}</CustomTableCell>
                   <CustomTableCell className="whitespace-nowrap text-sm font-medium text-gray-800 dark:text-gray-200">
-                    {emp.initial} {emp.firstName} {emp.midName} {emp.surName}
+                    {displayName(emp)}
                   </CustomTableCell>
+                  <CustomTableCell className="font-mono text-sm text-gray-500">{emp.initials || "—"}</CustomTableCell>
                   <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{emp.nic}</CustomTableCell>
                   <CustomTableCell>
                     <StatusBadge color={categoryColor[emp.category] ?? "gray"} className="w-fit text-xs">{emp.category}</StatusBadge>
@@ -162,8 +182,17 @@ export function EmployeeTable() {
                   <CustomTableCell>
                     <StatusBadge color={typeColor[emp.employmentType] ?? "gray"} className="w-fit text-xs">{emp.employmentType}</StatusBadge>
                   </CustomTableCell>
-                  <CustomTableCell className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    Rs. {Number(emp.basicSalary).toLocaleString()}
+                  <CustomTableCell className="whitespace-nowrap text-sm font-semibold text-gray-700 dark:text-gray-200">
+                    {Number(emp.basicSalary || 0).toLocaleString()}
+                  </CustomTableCell>
+                  <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                    {Number(emp.budgetaryAllowance) ? Number(emp.budgetaryAllowance).toLocaleString() : "—"}
+                  </CustomTableCell>
+                  <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                    {Number(emp.fixedAllowance) ? Number(emp.fixedAllowance).toLocaleString() : "—"}
+                  </CustomTableCell>
+                  <CustomTableCell className="whitespace-nowrap text-sm font-bold text-green-600">
+                    Rs. {Number(emp.totalPackage || 0).toLocaleString()}
                   </CustomTableCell>
                   <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                     {emp.contactNo || "—"}
@@ -197,7 +226,7 @@ export function EmployeeTable() {
               ))}
               {!loading && filtered.length === 0 && (
                 <CustomTableRow>
-                  <CustomTableCell colSpan={11} className="py-8 text-center text-sm text-gray-400">No employees found.</CustomTableCell>
+                  <CustomTableCell colSpan={15} className="py-8 text-center text-sm text-gray-400">No employees found.</CustomTableCell>
                 </CustomTableRow>
               )}
             </CustomTableBody>

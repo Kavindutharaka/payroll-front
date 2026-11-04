@@ -39,7 +39,12 @@ export default function BankAccounts() {
 
   const empIds   = [...new Set(accounts.map((b) => b.emp_id))];
   const filtered = accounts.filter((b) => {
-    const matchSearch = b.accountNum?.includes(search) || b.emp_id?.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchSearch = !q
+      || b.accountNum?.includes(search)
+      || b.emp_id?.toLowerCase().includes(q)
+      || b.empName?.toLowerCase().includes(q)
+      || b.bank?.toLowerCase().includes(q);
     const matchEmp    = filterEmp === "all" || b.emp_id === filterEmp;
     return matchSearch && matchEmp;
   });
@@ -69,12 +74,13 @@ export default function BankAccounts() {
             <CustomTable hoverable>
               <CustomTableHead>
                 <CustomTableRow>
-                  <CustomTableHeadCell>Employee ID</CustomTableHeadCell>
+                  <CustomTableHeadCell>Employee</CustomTableHeadCell>
+                  <CustomTableHeadCell>Account Name</CustomTableHeadCell>
+                  <CustomTableHeadCell>Account No.</CustomTableHeadCell>
                   <CustomTableHeadCell>Bank</CustomTableHeadCell>
                   <CustomTableHeadCell>Branch</CustomTableHeadCell>
-                  <CustomTableHeadCell>Account No.</CustomTableHeadCell>
-                  <CustomTableHeadCell>Split Type</CustomTableHeadCell>
-                  <CustomTableHeadCell>Split Value</CustomTableHeadCell>
+                  <CustomTableHeadCell>Codes</CustomTableHeadCell>
+                  <CustomTableHeadCell>Split</CustomTableHeadCell>
                   <CustomTableHeadCell>Default</CustomTableHeadCell>
                   <CustomTableHeadCell className="text-center">Actions</CustomTableHeadCell>
                 </CustomTableRow>
@@ -84,12 +90,20 @@ export default function BankAccounts() {
                   <CustomTableRow><CustomTableCell colSpan={8} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
                 ) : filtered.map((b) => (
                   <CustomTableRow key={b.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                    <CustomTableCell className="font-mono text-sm text-purple-500">{b.emp_id}</CustomTableCell>
-                    <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{b.bank}</CustomTableCell>
-                    <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{b.branch}</CustomTableCell>
+                    <CustomTableCell>
+                      <p className="whitespace-nowrap text-sm font-medium text-gray-800 dark:text-gray-200">{b.empName}</p>
+                      <p className="font-mono text-xs text-purple-500">{b.emp_id}</p>
+                    </CustomTableCell>
+                    <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{b.accountName || "—"}</CustomTableCell>
                     <CustomTableCell className="font-mono text-sm text-gray-700 dark:text-gray-200">{b.accountNum}</CustomTableCell>
-                    <CustomTableCell><StatusBadge color="indigo" className="w-fit text-xs">{b.splitType}</StatusBadge></CustomTableCell>
-                    <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{b.splitValue}{b.splitType === "Percentage" ? "%" : " Rs."}</CustomTableCell>
+                    <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{b.bank}</CustomTableCell>
+                    <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{b.branch}</CustomTableCell>
+                    <CustomTableCell className="whitespace-nowrap font-mono text-xs text-gray-500">
+                      {b.bankCode || "—"} / {b.branchCode || "—"}
+                    </CustomTableCell>
+                    <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                      {b.splitValue}{b.splitType === "Percentage" ? "%" : " Rs."}
+                    </CustomTableCell>
                     <CustomTableCell>
                       <StatusBadge color={b.isDefault ? "success" : "gray"} className="w-fit text-xs">
                         {b.isDefault ? "Default" : "Secondary"}

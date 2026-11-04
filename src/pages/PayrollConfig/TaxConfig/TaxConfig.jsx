@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { StatusBadge } from "../../../components/StatusBadge";
 import Layout from "../../../components/Layout";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
@@ -22,7 +22,7 @@ export default function TaxConfig() {
   const [editMode, setEditMode]         = useState(null);
   const [editSlab, setEditSlab]         = useState(null);
 
-  const loadModes = async () => {
+  const loadModes = useCallback(async () => {
     setLoadingModes(true);
     try {
       const data = await fetchTaxModes();
@@ -31,9 +31,9 @@ export default function TaxConfig() {
       if (!selectedMode && list.length > 0) setSelectedMode(list[0]);
     } catch (err) { console.error(err); }
     finally { setLoadingModes(false); }
-  };
+  }, [selectedMode]);
 
-  const loadSlabs = async (mode) => {
+  const loadSlabs = useCallback(async (mode) => {
     if (!mode) return;
     setLoadingSlabs(true);
     try {
@@ -41,10 +41,11 @@ export default function TaxConfig() {
       setSlabs(Array.isArray(data) ? data : []);
     } catch (err) { console.error(err); }
     finally { setLoadingSlabs(false); }
-  };
+  }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   useEffect(() => { loadModes(); }, []);
-  useEffect(() => { loadSlabs(selectedMode); }, [selectedMode]);
+  useEffect(() => { loadSlabs(selectedMode); }, [selectedMode, loadSlabs]);
 
   const handleSaveMode = async (form) => {
     try {

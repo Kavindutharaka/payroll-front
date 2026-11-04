@@ -1,0 +1,203 @@
+**Nadi:** Yes, you can. You can take that to the top. Take that to the top, right?
+
+**Kavindu:** Okay. So then if I title the first initials here, and then...
+
+**Nadi:** No, title that one. Okay. Then move this initial box to the side of the first name. Actually, we don't need such a large space for the title.
+
+**Kavindu:** Okay, right. After that, I added the date of joining, then the date of resignation... that was already there.
+
+**Nadi:** When feeding that, I sent you Excel sheets with some of the resignation details... did you feed those in?
+
+**Kavindu:** Yes, I fed those in.
+
+**Nadi:** Okay.
+
+**Kavindu:** After that... we removed unnecessary fields—the parts mentioned as not needed in this system. Let me check the Excel sheet, it's easier that way...
+
+**Mr. Ravi:** Ah, the Excel sheet...
+
+**Kavindu:** Yes. After that, "please see age" is correct, and "update date of joining" is correct. All those basic items... Basic salary, built-in allowance... that is there, plus allowance is there. "Pending" means I need to check and verify those. Employee salary cash payment is also pending.
+
+**Nadi:** Meaning cash, cheque, bank... what we agreed to add, so we can tick that option...
+
+**Kavindu:** Yes, exactly that.
+
+**Nadi:** That hasn't been done yet, right?
+
+**Kavindu:** No, cash option is there, but I need to check that QA part. After that, in the salary structure... "Salary should consider for EPF, Tax..." Here, I don't recall if I completed the EPF tax part. In the salary component...
+
+**Nadi:** Didn't we agree to add the budgetary allowance right next to the salary component for the one that isn't displaying?
+
+**Kavindu:** Yes. After that... "Budget allowance should consider for EPF, finance tax..." Yes, in this, under allowance tax ERP rules... I enabled budgetary allowance ("Yes"), and set "No" for other allowances including form teachers. All are taxable now.
+
+**Kavindu:** Yes, that's correct.
+
+**Nadi:** No, meaning... doesn't the master file itself show the budgetary tax right next to the basic salary?
+
+**Kavindu:** Ah, right here... Basic salary... It shows salary and taxes, basic salary, and the tax mode can be selected from here, then... the enable setting, it shows that.
+
+**Mr. Ravi:** Nadi, is it visible to you?
+
+**Nadi:** What I can see now is only Kavi's basic salary. I asked for another box there... I mentioned...
+
+**Kavindu:** Right here.
+
+**Mr. Ravi:** Kavindu, check that for a moment.
+
+**Kavindu:** Can you see it?
+
+**Nadi:** Yes... sorry, it doesn't display the basic salary alongside the budgetary allowance for those who have it, right Kavindu? It should be visible because when I inspect the employee master initially, I need to see their full amount.
+
+**Kavindu:** Ah, budget... ah, add it to this box, right? Ah, okay, okay.
+
+**Nadi:** Yes, right there next to basic salary, add another box so that budgetary allowance is also displayed there.
+
+**Kavindu:** Okay.
+
+**Nadi:** After that, you select from cash, bank, or cheque. If bank is selected, these bank details apply; if cheque, those stay blank. If cash, a cash box should be shown indicating it routes to the cash report.
+
+**Kavindu:** Ah... okay, so that remains pending then. Mr. Ravi, let me summarize what I've completed, because some items are currently in QA. What I have fully completed is the payslip. That's what I focused on completing recently. Let me show you the payslip today.
+
+**Mr. Ravi:** Okay.
+
+**Kavindu:** Now I fixed this according to the exact format requested, adding the logo...
+
+**Nadi:** Can you pull up employee number 355?
+
+**Kavindu:** 355.
+
+**Nadi:** Now look at that payslip... the allowances we added aren't appearing on it, right? I don't know if you haven't adjusted that yet. I noticed it when checking today. The allowance and a festival advance column I added—neither is reflecting there.
+
+**Kavindu:** Go to the salary structure and check 355.
+
+**Nadi:** It shows sports allowance and festival advance there, right? But that doesn't display on the payslip, does it?
+
+**Mr. Ravi:** Kavindu, open the payslip view for a moment...
+
+**Kavindu:** Wait a minute... sports allowance is fine, festival advance... ah, this is listed under allowance deduction.
+
+**Nadi:** That isn't showing up here, right? It's listed, but the amount isn't displaying?
+
+**Kavindu:** No, the amount isn't showing, yes. Okay, okay.
+
+**Mr. Ravi:** Kavindu, look into those deductions and check if it maps properly afterwards... like the others.
+
+**Kavindu:** Sorry, I couldn't hear clearly.
+
+**Mr. Ravi:** No, although the narration is present here, the deduction hasn't been added here. Check again what the cause is. If it's a common backend issue, fix it for us from the backend.
+
+**Kavindu:** Yes, it's a small backend issue.
+
+**Nadi:** Is designation displayed right in front of everyone's name here?
+
+**Kavindu:** In the sample given to me...
+
+**Nadi:** That's not necessary.
+
+**Kavindu:** Not necessary?
+
+**Nadi:** Usually designation... otherwise, the layout looks off. It shouldn't be right next to the name; there should be a separate field labeled "Designation".
+
+**Mr. Ravi:** Ah, yes, yes. Kavindu, do it like this: keep "Name" as Name, and add another row below it labeled "Designation".
+
+**Nadi:** Yes, fine.
+
+**Kavindu:** No, in the sample format I was provided, it was structured that way, so I built it accordingly.
+
+**Mr. Ravi:** Ah, no problem. Right now when Kavindu puts it next to the name, it looks cluttered (e.g., Name followed immediately by Nurse). Let me change that to a separate field below.
+
+**Nadi:** That entry isn't actually the designation, Kavindu. On our current payslip, for instance, a junior teacher appears as "J/T". That was likely mapped under designation. That was entered when EPF required categorizing employees for statements. That's what displays on our present payslip. But adding a proper designation field separately below the name is better.
+
+**Mr. Ravi:** Below "Name", add another row/box for "Designation". Keep it blank so we can enter designation.
+
+**Nadi:** Yeah, fine.
+
+**Kavindu:** So that's all for that section, right? Deduction...
+
+**Nadi:** Now, regarding where you put "increment"—where do we enter that? Is it entered under the category so it displays for that specific month? Is that how you built it?
+
+**Kavindu:** Yes, yes, it displays for that specific month.
+
+**Nadi:** Okay. So going to the relevant employee's record... under allowances... does the allowances category show a single final total for all different allowance categories, or... because form teacher and other allowances are categorized separately. Does the total of all those display there, or how? Deductions show separately, which is fine.
+
+**Kavindu:** Right.
+
+**Nadi:** Previously, only the combined allowance total was displayed. Is there a way to separate those?
+
+**Kavindu:** Here in the salary component, we can pull individual allowances separately if needed.
+
+**Nadi:** Would the payslip look too crowded if we list all of them?
+
+**Kavindu:** In this instance, there are only two allowances. These two can be added separately. Typically how many...
+
+**Nadi:** Basically 4 or 5. Form teacher allowance is usually added. If we put around 4... actually, let me leave the allowances total as it is, right?
+
+**Mr. Ravi:** Here's the situation: if we can list a breakdown underneath, that provides the clarity you need. It will just extend slightly lower. Currently, it only shows the accumulated figure, which leads employees to ask what specific allowances (like form teacher or club allowances) are included. If we keep the total figure and add a small-text breakdown below it as a reference showing how it was calculated, that would be ideal.
+
+**Kavindu:** I can add it in small text underneath... very small font...
+
+**Nadi:** Can we limit it to the basic 4 or 5 major allowances—like fixed allowance, form teacher allowance, and other allowances?
+
+**Mr. Ravi:** Exactly. Keep the main total in normal size for calculations, and add a small-text breakdown below as a reference showing how it was calculated. Is that doable?
+
+**Kavindu:** Yes, keep the allowance total as is, and add a breakdown in small text below it showing the calculation.
+
+**Nadi:** Yes, that works fine.
+
+**Kavindu:** Usually a maximum of 5 or 6 items, right?
+
+**Nadi:** Maximum of 5, yes.
+
+**Kavindu:** Okay, great.
+
+**Nadi:** So please check why deduction amounts aren't showing... and complete the allowance breakdown below. Once those are fixed, the payslip is complete, right?
+
+**Kavindu:** Is this format okay along with the other details?
+
+**Nadi:** Send me the format. I will review it against the current setup and let you know if anything else is needed.
+
+**Kavindu:** I will make these discussed updates and post a message in the group link so you can check directly.
+
+**Nadi:** Yes, okay.
+
+**Kavindu:** Okay.
+
+**Nadi:** So the new payslip format isn't live yet, right? When I viewed it today, it was still showing the old format. This new design is what will be used going forward?
+
+**Kavindu:** Yes, this is the redesigned version matched with the sample provided.
+
+**Nadi:** Okay, got it. And when the number of days is entered, does it calculate automatically based on basic salary?
+
+**Kavindu:** Ah, yes.
+
+**Nadi:** Okay.
+
+**Mr. Ravi:** Is everything clear on that, Kavindu?
+
+**Kavindu:** Yes, all clear.
+
+**Kavindu:** Next, in Employee Master, a filter was requested to display active employees only. I added that filter, along with the date of resignation field.
+
+**Nadi:** Okay.
+
+**Kavindu:** That's the current status. The rest is built and currently undergoing testing/checks.
+
+**Mr. Ravi:** Around when can we get the final release?
+
+**Kavindu:** I can deliver it by Monday. Today I will finalize and hand over the payslip, employee initials positioning, and salary field additions. The rest I will complete by Monday.
+
+**Mr. Ravi:** Nadi, when is your target pay day?
+
+**Nadi:** I need to finish processing by August 21st.
+
+**Mr. Ravi:** Today is the 13th.
+
+**Nadi:** Yes, but Monday and Tuesday are reserved for work with the Principal. That leaves Wednesday, Thursday, and Friday to prepare payroll. If I start processing August payroll from scratch in the new system without redoing July...
+
+**Mr. Ravi:** If deadline is the 21st, you need to start entering data by the 19th at the latest. As soon as Kavindu provides the final output on Monday, we can hold a review meeting Monday evening. If it's stable for data entry, you can proceed on the 19th. Otherwise, what do you prefer?
+
+**Nadi:** I'll process August payroll using the old system by the 21st, complete banking by the 24th, and run a parallel tally with the new system during the final week of August (by August 31st).
+
+**Mr. Ravi:** That sounds like a solid plan. Don't rush or risk delays. Kavindu, please complete the updates by Monday morning.
+
+**Nadi:** Once I finish work with the Principal on Monday/Tuesday, I will test it. Running two live systems simultaneously during payout week causes issues, so generating August salary in the old system by the 21st and tallying afterwards is safer.

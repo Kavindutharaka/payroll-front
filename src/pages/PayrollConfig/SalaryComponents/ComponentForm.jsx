@@ -66,13 +66,37 @@ export default function ComponentForm({ closeForm, initialData, onSave }) {
                 {form.calcType === "Fixed Amount" ? "Default Amount (Rs.)" : form.calcType === "Formula Based" ? "Formula" : "Default %"}
               </CustomLabel>
               {form.calcType === "Formula Based" ? (
-                <CustomInput id="defaultValue" value={form.formula} onChange={set("formula")} placeholder="e.g. (basic / 240) * hours" />
+                <CustomInput id="defaultValue" value={form.formula} onChange={set("formula")}
+                  placeholder="e.g. basic * 0.05" />
               ) : (
                 <CustomInput id="defaultValue" type="number" value={form.defaultValue} onChange={set("defaultValue")}
                   placeholder={form.calcType === "Fixed Amount" ? "e.g. 5000" : "e.g. 5"} required />
               )}
             </div>
           </div>
+
+          {form.calcType === "Formula Based" && (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs dark:border-gray-600 dark:bg-gray-700">
+              <p className="mb-1.5 font-semibold text-gray-600 dark:text-gray-300">You can use these in a formula</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[11px] text-gray-500 dark:text-gray-400">
+                <span><b>basic</b> — basic salary</span>
+                <span><b>budgetary</b> — budgetary allowance</span>
+                <span><b>increment</b> — increment this month</span>
+                <span><b>noPay</b> — no-pay amount</span>
+                <span><b>noPayDays</b> — no-pay days</span>
+                <span><b>baseGross</b> — basic − noPay + budgetary + increment</span>
+                <span><b>days</b> — 30</span>
+                <span className="text-gray-400">hours — always 0, no OT capture yet</span>
+              </div>
+              <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+                Only <span className="font-mono">+ − * / ( )</span> and the names above are allowed.
+                Examples: <span className="font-mono">basic * 0.05</span> ·
+                <span className="font-mono"> (basic + budgetary) / 30 * 2</span> ·
+                <span className="font-mono"> baseGross * 0.03</span>
+              </p>
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <CustomLabel htmlFor="effectiveDate">Effective Date</CustomLabel>
             <CustomInput id="effectiveDate" type="date" value={form.effectiveDate} onChange={set("effectiveDate")} required />
