@@ -6,6 +6,7 @@ import LoanTypeForm from "./LoanTypeForm";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { CustomButton } from "../../../components/FormFields";
 import { fetchLoanTypes, createLoanType, updateLoanType, deleteLoanType } from "../../../services/loanTypeService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 export default function LoanTypes() {
   const [loanTypes, setLoanTypes] = useState([]);
@@ -31,8 +32,8 @@ export default function LoanTypes() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this loan type?")) return;
-    try { await deleteLoanType(id); load(); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({ title: "Delete this loan type?", message: "Loans already given under it are not affected.", confirmLabel: "Delete loan type", tone: "danger" }))) return;
+    try { await deleteLoanType(id); notify.success("Loan type deleted."); load(); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
   return (
@@ -43,7 +44,7 @@ export default function LoanTypes() {
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Loan Types</h1>
             <p className="mt-1 text-sm text-gray-500">Configure loan products with interest rates and installment methods</p>
           </div>
-          <CustomButton color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
+          <CustomButton perm="loans.configure" color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
             <HiPlus className="mr-2 h-4 w-4" /> Create Loan Type
           </CustomButton>
         </div>
@@ -76,10 +77,10 @@ export default function LoanTypes() {
                     <CustomTableCell><StatusBadge color="indigo" className="w-fit text-xs">{lt.linkedComponent}</StatusBadge></CustomTableCell>
                     <CustomTableCell>
                       <div className="flex justify-center gap-2">
-                        <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditData(lt); setShowForm(true); }}>
+                        <CustomButton perm="loans.configure" size="xs" color="blue" outline pill onClick={() => { setEditData(lt); setShowForm(true); }}>
                           <HiPencil className="h-3.5 w-3.5" />
                         </CustomButton>
-                        <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(lt.id)}>
+                        <CustomButton perm="loans.configure" size="xs" color="failure" outline pill onClick={() => handleDelete(lt.id)}>
                           <HiTrash className="h-3.5 w-3.5" />
                         </CustomButton>
                       </div>

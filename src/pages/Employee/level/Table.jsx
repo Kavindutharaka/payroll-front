@@ -5,6 +5,7 @@ import LevelForm from "./LevelForm";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { CustomButton } from "../../../components/FormFields";
 import { fetchLevels, createLevel, updateLevel, deleteLevel } from "../../../services/levelService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 export function LevelTable() {
   const [levels, setLevels]       = useState([]);
@@ -30,8 +31,8 @@ export function LevelTable() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this level?")) return;
-    try { await deleteLevel(id); load(); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({ title: "Delete this level?", message: "Employees already on this level keep it on their record.", confirmLabel: "Delete level", tone: "danger" }))) return;
+    try { await deleteLevel(id); notify.success("Level deleted."); load(); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
   return (
@@ -41,7 +42,7 @@ export function LevelTable() {
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Employee Levels</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage and organize your employee level hierarchy</p>
         </div>
-        <CustomButton onClick={() => { setEditData(null); setOpenModal(true); }} color="purple">
+        <CustomButton perm="positions.edit" onClick={() => { setEditData(null); setOpenModal(true); }} color="purple">
           <HiPlus className="mr-2 h-4 w-4" /> Add Level
         </CustomButton>
       </div>
@@ -69,10 +70,10 @@ export function LevelTable() {
                   <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{level.description}</CustomTableCell>
                   <CustomTableCell>
                     <div className="flex items-center justify-center gap-2">
-                      <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditData(level); setOpenModal(true); }}>
+                      <CustomButton perm="positions.edit" size="xs" color="blue" outline pill onClick={() => { setEditData(level); setOpenModal(true); }}>
                         <HiPencil className="h-3.5 w-3.5" />
                       </CustomButton>
-                      <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(level.id)}>
+                      <CustomButton perm="positions.delete" size="xs" color="failure" outline pill onClick={() => handleDelete(level.id)}>
                         <HiTrash className="h-3.5 w-3.5" />
                       </CustomButton>
                     </div>

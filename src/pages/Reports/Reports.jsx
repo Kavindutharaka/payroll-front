@@ -17,6 +17,8 @@ import {
 import { fetchSalaryPaymentFile, fetchNonBankPayments, fetchBankDetailsReport } from "../../services/bankAccountService";
 import { buildEpfText, buildEtfText, downloadText } from "../../services/statutoryFiles";
 import { downloadXlsx } from "../../services/xlsx";
+import { promptDialog } from "../../ui/feedback";
+import { useCan } from "../../auth/AuthContext";
 
 const money = (v) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
@@ -516,6 +518,7 @@ const REPORTS = [
 ];
 
 export default function Reports() {
+  const canExport = useCan()("reports.export");
   const [selectedId, setSelectedId] = useState(null);
   const [from, setFrom]             = useState(() => monthBounds()[0]);
   const [to, setTo]                 = useState(() => monthBounds()[1]);
@@ -594,17 +597,23 @@ export default function Reports() {
   /* The upload text file, written the way the fund's Excel generator wrote it.
    * The ETF one asks, as the generator did, for the number of lines on the
    * first page of Form II - it goes into the header record. */
-  const handleTextFile = () => {
+  const handleTextFile = async () => {
     if (!report?.textFile || rows.length === 0) return;
     const ym = range.fromMonth.replace("-", "");
     if (report.textFile === "epf") { downloadText(`EPF_${ym}.txt`, buildEpfText(rows)); return; }
-    const ans = window.prompt("Enter number of lines in the 1st page of the Form II (1 - 99)", "");
+    const ans = await promptDialog({
+      title: "ETF upload file",
+      message: "How many lines are on the first page of Form II?",
+      label: "Lines on page 1 (1 – 99)",
+      inputMode: "numeric",
+      confirmLabel: "Create file",
+      validate: (v) => {
+        const x = Number(String(v).trim());
+        return Number.isInteger(x) && x >= 1 && x <= 99 ? null : "Enter a whole number from 1 to 99.";
+      },
+    });
     if (ans === null) return;
     const n = Number(String(ans).trim());
-    if (!Number.isInteger(n) || n < 1 || n > 99) {
-      setError("Lines on the 1st page of Form II must be a whole number from 1 to 99.");
-      return;
-    }
     setError("");
     downloadText(`ETF_${ym}.txt`, buildEtfText(rows, n));
   };
@@ -767,7 +776,10 @@ export default function Reports() {
 
   return (
     <Layout>
-      <div className="flex flex-col gap-6">
+      {!canExport && (
+        <p className="hidden p-8 text-sm text-gray-700 print:block">Printing reports isn't part of your role. Ask the payroll administrator if you need a printed copy.</p>
+      )}
+      <div className={`flex flex-col gap-6 ${canExport ? "" : "print:hidden"}`}>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -838,23 +850,23 @@ export default function Reports() {
               </div>
               <div className="flex gap-2">
                 {report.textFile && (
-                  <CustomButton color="gray" outline size="sm" disabled={rows.length === 0} onClick={handleTextFile}>
+                  <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0} onClick={handleTextFile}>
                     <HiDocumentText className="mr-2 h-4 w-4" /> Text File
                   </CustomButton>
                 )}
                 {report.excel && (
-                  <CustomButton color="gray" outline size="sm" disabled={rows.length === 0 || exporting || blocked}
+                  <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0 || exporting || blocked}
                     onClick={handleExcel} title="One Excel sheet per month of the range, for the auditors">
                     <HiTable className="mr-2 h-4 w-4" /> {exporting ? "Building…" : "Excel (by month)"}
                   </CustomButton>
                 )}
-                <CustomButton color="gray" outline size="sm" disabled={rows.length === 0} onClick={() => window.print()}>
+                <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0} onClick={() => window.print()}>
                   <HiPrinter className="mr-2 h-4 w-4" /> Print
                 </CustomButton>
-                <CustomButton color="gray" outline size="sm" disabled={rows.length === 0} onClick={handlePdf}>
+                <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0} onClick={handlePdf}>
                   <HiDocumentText className="mr-2 h-4 w-4" /> PDF
                 </CustomButton>
-                <CustomButton color="purple" size="sm" disabled={rows.length === 0} onClick={handleExport}>
+                <CustomButton perm="reports.export" color="purple" size="sm" disabled={rows.length === 0} onClick={handleExport}>
                   <HiDownload className="mr-2 h-4 w-4" /> Export CSV
                 </CustomButton>
               </div>

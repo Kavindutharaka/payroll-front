@@ -50,7 +50,7 @@ export default function LeaveTracking() {
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Leave Tracking</h1>
             <p className="mt-1 text-sm text-gray-500">Apply, approve and track employee leave requests</p>
           </div>
-          <CustomButton color="purple" onClick={() => setShowForm(true)}>
+          <CustomButton perm="leave.apply" color="purple" onClick={() => setShowForm(true)}>
             <HiPlus className="mr-2 h-4 w-4" /> Apply Leave
           </CustomButton>
         </div>
@@ -96,10 +96,10 @@ export default function LeaveTracking() {
                     <CustomTableCell>
                       {r.status === "Pending" ? (
                         <div className="flex justify-center gap-2">
-                          <CustomButton size="xs" color="success" pill title="Approve" onClick={() => handleStatus(r.id, "Approved")}>
+                          <CustomButton perm="leave.approve" size="xs" color="success" pill title="Approve" onClick={() => handleStatus(r.id, "Approved")}>
                             <HiCheck className="h-3.5 w-3.5" />
                           </CustomButton>
-                          <CustomButton size="xs" color="failure" pill title="Reject" onClick={() => handleStatus(r.id, "Rejected")}>
+                          <CustomButton perm="leave.approve" size="xs" color="failure" pill title="Reject" onClick={() => handleStatus(r.id, "Rejected")}>
                             <HiX className="h-3.5 w-3.5" />
                           </CustomButton>
                         </div>

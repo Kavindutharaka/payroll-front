@@ -10,6 +10,7 @@ import {
   fetchTaxModes, createTaxMode, updateTaxMode, deleteTaxMode,
   fetchTaxSlabs, createTaxSlab, updateTaxSlab, deleteTaxSlab,
 } from "../../../services/taxService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 export default function TaxConfig() {
   const [modes, setModes]               = useState([]);
@@ -56,8 +57,8 @@ export default function TaxConfig() {
   };
 
   const handleDeleteMode = async (id) => {
-    if (!window.confirm("Delete this tax mode?")) return;
-    try { await deleteTaxMode(id); loadModes(); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({ title: "Delete this tax mode?", message: "Its tax slabs go with it.", confirmLabel: "Delete tax mode", tone: "danger" }))) return;
+    try { await deleteTaxMode(id); notify.success("Tax mode deleted."); loadModes(); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
   const handleSaveSlab = async (form) => {
@@ -69,8 +70,8 @@ export default function TaxConfig() {
   };
 
   const handleDeleteSlab = async (id) => {
-    if (!window.confirm("Delete this tax slab?")) return;
-    try { await deleteTaxSlab(id); loadSlabs(selectedMode); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({ title: "Delete this tax slab?", confirmLabel: "Delete slab", tone: "danger" }))) return;
+    try { await deleteTaxSlab(id); notify.success("Tax slab deleted."); loadSlabs(selectedMode); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
   return (
@@ -88,7 +89,7 @@ export default function TaxConfig() {
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700">
               <p className="font-semibold text-gray-800 dark:text-white">Tax Modes</p>
-              <CustomButton color="purple" size="sm" onClick={() => { setEditMode(null); setShowModeForm(true); }}>
+              <CustomButton perm="payrollConfig.edit" color="purple" size="sm" onClick={() => { setEditMode(null); setShowModeForm(true); }}>
                 <HiPlus className="mr-1.5 h-4 w-4" /> Create Mode
               </CustomButton>
             </div>
@@ -114,10 +115,10 @@ export default function TaxConfig() {
                       <CustomTableCell className="text-xs text-gray-500">{m.effectiveDate}</CustomTableCell>
                       <CustomTableCell>
                         <div className="flex justify-center gap-2">
-                          <CustomButton size="xs" color="blue" outline pill onClick={(e) => { e.stopPropagation(); setEditMode(m); setShowModeForm(true); }}>
+                          <CustomButton perm="payrollConfig.edit" size="xs" color="blue" outline pill onClick={(e) => { e.stopPropagation(); setEditMode(m); setShowModeForm(true); }}>
                             <HiPencil className="h-3.5 w-3.5" />
                           </CustomButton>
-                          <CustomButton size="xs" color="failure" outline pill onClick={(e) => { e.stopPropagation(); handleDeleteMode(m.id); }}>
+                          <CustomButton perm="payrollConfig.delete" size="xs" color="failure" outline pill onClick={(e) => { e.stopPropagation(); handleDeleteMode(m.id); }}>
                             <HiTrash className="h-3.5 w-3.5" />
                           </CustomButton>
                         </div>
@@ -138,7 +139,7 @@ export default function TaxConfig() {
               <p className="font-semibold text-gray-800 dark:text-white">
                 Slabs — <span className="text-purple-500">{selectedMode?.name ?? "—"}</span>
               </p>
-              <CustomButton color="purple" size="sm" disabled={!selectedMode} onClick={() => { setEditSlab(null); setShowSlabForm(true); }}>
+              <CustomButton perm="payrollConfig.edit" color="purple" size="sm" disabled={!selectedMode} onClick={() => { setEditSlab(null); setShowSlabForm(true); }}>
                 <HiPlus className="mr-1.5 h-4 w-4" /> Add Slab
               </CustomButton>
             </div>
@@ -173,10 +174,10 @@ export default function TaxConfig() {
                         <CustomTableCell className="text-xs text-gray-500">{s.effectiveDate}</CustomTableCell>
                         <CustomTableCell>
                           <div className="flex justify-center gap-2">
-                            <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditSlab(s); setShowSlabForm(true); }}>
+                            <CustomButton perm="payrollConfig.edit" size="xs" color="blue" outline pill onClick={() => { setEditSlab(s); setShowSlabForm(true); }}>
                               <HiPencil className="h-3.5 w-3.5" />
                             </CustomButton>
-                            <CustomButton size="xs" color="failure" outline pill onClick={() => handleDeleteSlab(s.id)}>
+                            <CustomButton perm="payrollConfig.delete" size="xs" color="failure" outline pill onClick={() => handleDeleteSlab(s.id)}>
                               <HiTrash className="h-3.5 w-3.5" />
                             </CustomButton>
                           </div>

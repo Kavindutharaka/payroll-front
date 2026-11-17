@@ -6,6 +6,7 @@ import ComponentForm from "./ComponentForm";
 import { CustomInput, CustomButton } from "../../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { fetchSalaryComponents, createSalaryComponent, updateSalaryComponent, archiveSalaryComponent } from "../../../services/salaryComponentService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 const typeColor = { Allowance: "success", Deduction: "failure", "Employer Contribution": "indigo" };
 const boolBadge = (v) => <StatusBadge color={v ? "success" : "gray"} className="w-fit text-xs">{v ? "Yes" : "No"}</StatusBadge>;
@@ -35,8 +36,8 @@ export default function SalaryComponents() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Archive this salary component?")) return;
-    try { await archiveSalaryComponent(id); load(); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({ title: "Archive this salary component?", message: "It can no longer be assigned to employees. Amounts already assigned are not changed.", confirmLabel: "Archive", tone: "danger" }))) return;
+    try { await archiveSalaryComponent(id); notify.success("Salary component archived."); load(); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
   const filtered = components.filter((c) =>
@@ -51,7 +52,7 @@ export default function SalaryComponents() {
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Salary Components</h1>
             <p className="mt-1 text-sm text-gray-500">Define dynamic allowances and deductions — no coding needed</p>
           </div>
-          <CustomButton color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
+          <CustomButton perm="payrollConfig.edit" color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
             <HiPlus className="mr-2 h-4 w-4" /> Create Component
           </CustomButton>
         </div>
@@ -96,10 +97,10 @@ export default function SalaryComponents() {
                     <CustomTableCell>{boolBadge(c.mandatory)}</CustomTableCell>
                     <CustomTableCell>
                       <div className="flex justify-center gap-2">
-                        <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditData(c); setShowForm(true); }}>
+                        <CustomButton perm="payrollConfig.edit" size="xs" color="blue" outline pill onClick={() => { setEditData(c); setShowForm(true); }}>
                           <HiPencil className="h-3.5 w-3.5" />
                         </CustomButton>
-                        <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(c.id)}>
+                        <CustomButton perm="payrollConfig.delete" size="xs" color="failure" outline pill onClick={() => handleDelete(c.id)}>
                           <HiTrash className="h-3.5 w-3.5" />
                         </CustomButton>
                       </div>

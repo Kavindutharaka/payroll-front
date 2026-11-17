@@ -6,6 +6,7 @@ import BankAccountForm from "./BankAccountForm";
 import { CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { fetchBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount } from "../../../services/bankAccountService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 export default function BankAccounts() {
   const [accounts, setAccounts]   = useState([]);
@@ -33,8 +34,8 @@ export default function BankAccounts() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this bank account?")) return;
-    try { await deleteBankAccount(id); load(); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({ title: "Delete this bank account?", message: "Salary will no longer be paid into this account.", confirmLabel: "Delete account", tone: "danger" }))) return;
+    try { await deleteBankAccount(id); notify.success("Bank account deleted."); load(); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
   const empIds   = [...new Set(accounts.map((b) => b.emp_id))];
@@ -57,7 +58,7 @@ export default function BankAccounts() {
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Bank Accounts</h1>
             <p className="mt-1 text-sm text-gray-500">Manage employee bank accounts and salary split configurations</p>
           </div>
-          <CustomButton color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
+          <CustomButton perm="payment.edit" color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
             <HiPlus className="mr-2 h-4 w-4" /> Add Account
           </CustomButton>
         </div>
@@ -111,10 +112,10 @@ export default function BankAccounts() {
                     </CustomTableCell>
                     <CustomTableCell>
                       <div className="flex justify-center gap-2">
-                        <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditData(b); setShowForm(true); }}>
+                        <CustomButton perm="payment.edit" size="xs" color="blue" outline pill onClick={() => { setEditData(b); setShowForm(true); }}>
                           <HiPencil className="h-3.5 w-3.5" />
                         </CustomButton>
-                        <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(b.id)}>
+                        <CustomButton perm="payment.delete" size="xs" color="failure" outline pill onClick={() => handleDelete(b.id)}>
                           <HiTrash className="h-3.5 w-3.5" />
                         </CustomButton>
                       </div>

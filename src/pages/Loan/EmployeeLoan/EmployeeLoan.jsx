@@ -11,6 +11,7 @@ import {
   fetchLoans, createLoan, updateLoan, closeLoan,
   installmentFor, loanStanding, loanMonths, monthlyInterestOf,
 } from "../../../services/loanService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 const statusColor = { Active: "warning", Upcoming: "indigo", Completed: "success", Closed: "gray" };
 const pad = (n) => String(n).padStart(2, "0");
@@ -77,8 +78,8 @@ export default function EmployeeLoan() {
   const closeDialog = () => { setShowForm(false); setEditing(null); };
 
   const handleClose = async (id) => {
-    if (!window.confirm("Close this loan?")) return;
-    try { await closeLoan(id); load(); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({ title: "Close this loan?", message: "No further installments will be deducted from payroll for it.", confirmLabel: "Close loan", tone: "danger" }))) return;
+    try { await closeLoan(id); notify.success("Loan closed."); load(); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
   // where each loan stands at the start of the open payroll month, from its
@@ -125,7 +126,7 @@ export default function EmployeeLoan() {
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Employee Loans</h1>
             <p className="mt-1 text-sm text-gray-500">Grant loans, track installments and manage balances</p>
           </div>
-          <CustomButton color="purple" onClick={() => setShowForm(true)}>
+          <CustomButton perm="loans.edit" color="purple" onClick={() => setShowForm(true)}>
             <HiPlus className="mr-2 h-4 w-4" /> Grant Loan
           </CustomButton>
         </div>
@@ -241,10 +242,10 @@ export default function EmployeeLoan() {
                       <CustomTableCell>
                         <div className="flex justify-center gap-2">
                           {l.status === "Active" && (<>
-                            <CustomButton size="xs" color="purple" outline pill title="Edit Loan" onClick={() => openEdit(l)}>
+                            <CustomButton perm="loans.edit" size="xs" color="purple" outline pill title="Edit Loan" onClick={() => openEdit(l)}>
                               <HiPencil className="h-3.5 w-3.5" />
                             </CustomButton>
-                            <CustomButton size="xs" color="failure" outline pill title="Close Loan" onClick={() => handleClose(l.id)}>
+                            <CustomButton perm="loans.close" size="xs" color="failure" outline pill title="Close Loan" onClick={() => handleClose(l.id)}>
                               <HiX className="h-3.5 w-3.5" />
                             </CustomButton>
                           </>)}

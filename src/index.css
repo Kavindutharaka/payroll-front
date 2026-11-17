@@ -20,3 +20,14 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* toasts and dialogs (src/ui/FeedbackHost.jsx) */
+@keyframes fb-in   { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes fb-out  { to { opacity: 0; transform: translateX(8px); } }
+@keyframes fb-pop  { from { opacity: 0; transform: scale(.97) translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes fb-fade { from { opacity: 0; } to { opacity: 1; } }
+.fb-in   { animation: fb-in .18s ease-out both; }
+.fb-out  { animation: fb-out .16s ease-in both; }
+.fb-pop  { animation: fb-pop .16s ease-out both; }
+.fb-fade { animation: fb-fade .16s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .fb-in, .fb-out, .fb-pop, .fb-fade { animation: none; } }

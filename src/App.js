@@ -1,4 +1,11 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './auth/AuthContext';
+import { ROUTE_PERMS, canOpen } from './auth/access';
+import FeedbackHost from './ui/FeedbackHost';
+import Login from './pages/Auth/Login';
+import ForcedPasswordChange from './pages/Auth/ChangePassword';
+import UsersRoles from './pages/Admin/UsersRoles';
+import NoAccess from './pages/Auth/NoAccess';
 
 // Employee
 import Employee from './pages/Employee/employee/Employee';
@@ -37,47 +44,79 @@ import BonusSheet from './pages/Payroll/Bonus/BonusSheet';
 import Reports from './pages/Reports/Reports';
 import Documents from './pages/Documents/Documents';
 
+/* A screen only opens for a role that includes its permission. */
+function Guard({ path, children }) {
+  const { can } = useAuth();
+  const perm = ROUTE_PERMS[path];
+  if (perm && !can(perm)) {
+    if (path === "/") return <FirstAllowed />;
+    return <NoAccess />;
+  }
+  return children;
+}
+
+/* Someone without the dashboard starts at the first screen they can open. */
+function FirstAllowed() {
+  const { can } = useAuth();
+  const first = Object.keys(ROUTE_PERMS).find((href) => href !== "/" && canOpen(can, href));
+  return first ? <Navigate to={first} replace /> : <NoAccess none />;
+}
+
+const ROUTES = [
+  ["/", <Dashboard />],
+  ["/emp/manage", <Employee />],
+  ["/emp/salary-structure", <SalaryStructure />],
+  ["/emp/pos", <Position />],
+  ["/emp/lvl", <Level />],
+  ["/config/components", <SalaryComponents />],
+  ["/config/tax", <TaxConfig />],
+  ["/config/epf-etf", <EPFETFConfig />],
+  ["/config/ot", <OTConfig />],
+  ["/leave/types", <LeaveTypes />],
+  ["/leave/tracking", <LeaveTracking />],
+  ["/loan/types", <LoanTypes />],
+  ["/loan/employee", <EmployeeLoan />],
+  ["/payment/banks", <BankAccounts />],
+  ["/payment/standing-orders", <StandingOrders />],
+  ["/payroll/run", <RunPayroll />],
+  ["/payroll/payslip", <Payslip />],
+  ["/payroll/increment", <IncrementSheet />],
+  ["/payroll/bonus", <BonusSheet />],
+  ["/reports", <Reports />],
+  ["/documents", <Documents />],
+  ["/admin/users", <UsersRoles />],
+];
+
+function Splash() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900" aria-busy="true">
+      <span className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-[#29166F]" />
+    </div>
+  );
+}
+
+function Gate() {
+  const { status, user } = useAuth();
+  if (status === "loading") return <Splash />;
+  if (status !== "signedIn") return <Login />;
+  if (user?.mustChangePassword) return <ForcedPasswordChange />;
+  return (
+    <Routes>
+      {ROUTES.map(([path, element]) => (
+        <Route key={path} path={path} element={<Guard path={path}>{element}</Guard>} />
+      ))}
+      <Route path="*" element={<NoAccess missing />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <Router>
-      <Routes>
-        {/* Dashboard */}
-        <Route path="/" element={<Dashboard />} />
-
-        {/* Employee */}
-        <Route path="/emp/manage" element={<Employee />} />
-        <Route path="/emp/salary-structure" element={<SalaryStructure />} />
-        <Route path="/emp/pos" element={<Position />} />
-        <Route path="/emp/lvl" element={<Level />} />
-
-        {/* Payroll Config */}
-        <Route path="/config/components" element={<SalaryComponents />} />
-        <Route path="/config/tax" element={<TaxConfig />} />
-        <Route path="/config/epf-etf" element={<EPFETFConfig />} />
-        <Route path="/config/ot" element={<OTConfig />} />
-
-        {/* Leave */}
-        <Route path="/leave/types" element={<LeaveTypes />} />
-        <Route path="/leave/tracking" element={<LeaveTracking />} />
-
-        {/* Loan */}
-        <Route path="/loan/types" element={<LoanTypes />} />
-        <Route path="/loan/employee" element={<EmployeeLoan />} />
-
-        {/* Payment */}
-        <Route path="/payment/banks" element={<BankAccounts />} />
-        <Route path="/payment/standing-orders" element={<StandingOrders />} />
-
-        {/* Payroll Processing */}
-        <Route path="/payroll/run" element={<RunPayroll />} />
-        <Route path="/payroll/payslip" element={<Payslip />} />
-        <Route path="/payroll/increment" element={<IncrementSheet />} />
-        <Route path="/payroll/bonus" element={<BonusSheet />} />
-
-        {/* Reports */}
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/documents" element={<Documents />} />
-      </Routes>
+      <AuthProvider>
+        <Gate />
+        <FeedbackHost />
+      </AuthProvider>
     </Router>
   );
 }

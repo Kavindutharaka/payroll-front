@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Layout from "../../components/Layout";
 import { StatusBadge } from "../../components/StatusBadge";
 import {
@@ -6,6 +7,8 @@ import {
   HiBriefcase, HiPlay, HiChartBar, HiUserRemove,
 } from "react-icons/hi";
 import { fetchDashboardStats, fetchRunSummary } from "../../services/reportService";
+import { useCan } from "../../auth/AuthContext";
+import { canOpen } from "../../auth/access";
 
 const statusColor = { Draft: "warning", Approved: "indigo", Paid: "success" };
 const money = (v) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -16,6 +19,7 @@ const monthLabel = (m) => {
 };
 
 export default function Dashboard() {
+  const can = useCan();
   const [stats, setStats]   = useState(null);
   const [runs, setRuns]     = useState([]);
   const [loading, setLoad]  = useState(true);
@@ -142,14 +146,14 @@ export default function Dashboard() {
                 { label: "Grant Loan",       href: "/loan/employee",     color: "bg-yellow-50 text-yellow-600 hover:bg-yellow-100",  icon: HiBriefcase },
                 { label: "Salary Components",href: "/config/components", color: "bg-pink-50 text-pink-600 hover:bg-pink-100",        icon: HiDocumentText },
                 { label: "View Reports",     href: "/reports",           color: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100",  icon: HiChartBar },
-              ].map((a) => {
+              ].filter((a) => canOpen(can, a.href)).map((a) => {
                 const Icon = a.icon;
                 return (
-                  <a key={a.label} href={a.href}
+                  <Link key={a.label} to={a.href}
                     className={`flex items-center gap-3 rounded-lg p-4 text-sm font-medium transition-colors ${a.color}`}>
                     <Icon className="h-5 w-5 flex-shrink-0" />
                     {a.label}
-                  </a>
+                  </Link>
                 );
               })}
             </div>

@@ -6,6 +6,7 @@ import StandingOrderForm from "./StandingOrderForm";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { CustomButton } from "../../../components/FormFields";
 import { fetchStandingOrders, createStandingOrder, updateStandingOrder, deleteStandingOrder } from "../../../services/standingOrderService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 export default function StandingOrders() {
   const [orders, setOrders]     = useState([]);
@@ -31,8 +32,8 @@ export default function StandingOrders() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this standing order?")) return;
-    try { await deleteStandingOrder(id); load(); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({ title: "Delete this standing order?", message: "It will no longer be deducted from payroll.", confirmLabel: "Delete standing order", tone: "danger" }))) return;
+    try { await deleteStandingOrder(id); notify.success("Standing order deleted."); load(); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
   return (
@@ -43,7 +44,7 @@ export default function StandingOrders() {
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Standing Orders</h1>
             <p className="mt-1 text-sm text-gray-500">Configure recurring fixed or percentage-based salary transfers</p>
           </div>
-          <CustomButton color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
+          <CustomButton perm="payment.edit" color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
             <HiPlus className="mr-2 h-4 w-4" /> Create Standing Order
           </CustomButton>
         </div>
@@ -76,10 +77,10 @@ export default function StandingOrders() {
                     <CustomTableCell><StatusBadge color="success" className="w-fit text-xs">{so.status}</StatusBadge></CustomTableCell>
                     <CustomTableCell>
                       <div className="flex justify-center gap-2">
-                        <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditData(so); setShowForm(true); }}>
+                        <CustomButton perm="payment.edit" size="xs" color="blue" outline pill onClick={() => { setEditData(so); setShowForm(true); }}>
                           <HiPencil className="h-3.5 w-3.5" />
                         </CustomButton>
-                        <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(so.id)}>
+                        <CustomButton perm="payment.delete" size="xs" color="failure" outline pill onClick={() => handleDelete(so.id)}>
                           <HiTrash className="h-3.5 w-3.5" />
                         </CustomButton>
                       </div>

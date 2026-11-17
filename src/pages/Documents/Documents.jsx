@@ -3,7 +3,9 @@ import Layout from "../../components/Layout";
 import { HiUpload, HiSearch, HiExternalLink, HiTrash, HiFolderOpen, HiExclamation } from "react-icons/hi";
 import { CustomButton, CustomInput, CustomSelect, CustomLabel } from "../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../components/CustomTable";
-import { fetchDocuments, uploadDocument, hideDocument, fileUrl, MAX_BYTES } from "../../services/documentService";
+import { useCan } from "../../auth/AuthContext";
+import { notify, confirmDialog } from "../../ui/feedback";
+import { fetchDocuments, uploadDocument, hideDocument, openDocument, MAX_BYTES } from "../../services/documentService";
 
 const CATEGORIES = ["Payroll sheet", "EPF / ETF", "Tax / PAYE", "Bank transfer", "Bonus", "Increment", "Other"];
 
@@ -21,6 +23,7 @@ const blank = { title: "", periodMonth: "", category: "Payroll sheet", notes: ""
 /* Payroll files prepared before the system - last year's Excel sheets and so on -
  * kept here to look back at. Nothing in them is imported or calculated. */
 export default function Documents() {
+  const can = useCan();
   const [docs, setDocs]       = useState([]);
   const [loading, setLoading] = useState(false);
   const [file, setFile]       = useState(null);
@@ -57,19 +60,32 @@ export default function Documents() {
     setBusy(true); setError(""); setNotice("");
     try {
       await uploadDocument(file, meta);
-      setNotice(`"${meta.title || file.name}" has been stored.`);
+      notify.success(`"${meta.title || file.name}" has been stored.`);
       setFile(null); setMeta(blank); setInputKey((k) => k + 1);
       load();
     } catch (err) {
       console.error(err);
-      setError("The file could not be stored. Check the connection and try again.");
+      setError(err.userMessage || "The file could not be stored. Check the connection and try again.");
     } finally { setBusy(false); }
   };
 
   const remove = async (d) => {
-    if (!window.confirm(`Remove "${d.title}" from the list?`)) return;
-    try { await hideDocument(d.id); load(); }
+    const ok = await confirmDialog({
+      title: `Remove "${d.title}"?`,
+      message: "It will no longer appear in this list or be available to open.",
+      confirmLabel: "Remove", tone: "danger",
+    });
+    if (!ok) return;
+    try { await hideDocument(d.id); notify.success(`"${d.title}" has been removed.`); load(); }
     catch (e) { console.error(e); setError("Could not remove that file."); }
+  };
+
+  const [opening, setOpening] = useState(null);
+  const open = async (d) => {
+    setOpening(d.id);
+    try { await openDocument(d); }
+    catch (e) { notify.error(e.userMessage || "Could not open that file."); }
+    finally { setOpening(null); }
   };
 
   const shown = useMemo(() => {
@@ -100,7 +116,7 @@ export default function Documents() {
           </div>
         )}
 
-        <form onSubmit={upload}
+        {can("documents.upload") && <form onSubmit={upload}
           className="grid grid-cols-1 gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 md:grid-cols-2 xl:grid-cols-4">
           <div className="flex flex-col gap-1.5 md:col-span-2 xl:col-span-4">
             <CustomLabel htmlFor="docFile">File</CustomLabel>
@@ -132,7 +148,7 @@ export default function Documents() {
               <HiUpload className="mr-2 h-4 w-4" /> {busy ? "Storing…" : "Store File"}
             </CustomButton>
           </div>
-        </form>
+        </form>}
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-5 py-3 dark:border-gray-700">
@@ -182,12 +198,12 @@ export default function Documents() {
                     <CustomTableCell>
                       <div className="flex justify-center gap-2">
                         {/* Excel files open in Excel; a PDF opens in the browser */}
-                        <a href={fileUrl(d.storedName)} target="_blank" rel="noopener noreferrer" download={d.fileName}
+                        <button type="button" onClick={() => open(d)} disabled={opening === d.id}
                           title="Open / download"
-                          className="inline-flex items-center rounded-full border border-purple-400 px-2.5 py-1 text-xs font-medium text-purple-600 hover:bg-purple-50 dark:text-purple-300">
-                          <HiExternalLink className="mr-1 h-3.5 w-3.5" /> Open
-                        </a>
-                        <CustomButton size="xs" color="failure" outline pill title="Remove from the list" onClick={() => remove(d)}>
+                          className="inline-flex items-center rounded-full border border-purple-400 px-2.5 py-1 text-xs font-medium text-purple-600 hover:bg-purple-50 disabled:opacity-60 dark:text-purple-300">
+                          <HiExternalLink className="mr-1 h-3.5 w-3.5" /> {opening === d.id ? "Opening…" : "Open"}
+                        </button>
+                        <CustomButton perm="documents.remove" size="xs" color="failure" outline pill title="Remove from the list" onClick={() => remove(d)}>
                           <HiTrash className="h-3.5 w-3.5" />
                         </CustomButton>
                       </div>

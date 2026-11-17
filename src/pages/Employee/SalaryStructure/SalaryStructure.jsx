@@ -8,6 +8,7 @@ import { CustomInput, CustomButton } from "../../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { fetchEmployees } from "../../../services/employeeService";
 import { fetchStructureByEmployee, createStructureItem, updateStructureItem, deleteStructureItem, paidMonthsText } from "../../../services/salaryStructureService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 const typeColor = { Allowance: "success", Deduction: "failure", "Employer Contribution": "indigo" };
 const shortDate = (v) => {
@@ -56,13 +57,12 @@ export default function SalaryStructure() {
 
   const handleDelete = async (c) => {
     const amount = Number(c.value || 0).toLocaleString();
-    if (!window.confirm(
-      `Remove "${c.componentName}" (${c.type}, Rs. ${amount}) from this employee?
-
-` +
-      `This cannot be undone, and the next payroll recalculation will drop it.`
-    )) return;
-    try { await deleteStructureItem(c.id); loadComponents(selected); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({
+      title: `Remove ${c.componentName}?`,
+      message: `${c.type}, Rs. ${amount}. This can't be undone, and the next payroll calculation will leave it out.`,
+      confirmLabel: "Remove", tone: "danger",
+    }))) return;
+    try { await deleteStructureItem(c.id); notify.success(`${c.componentName} removed.`); loadComponents(selected); } catch (err) { console.error(err); notify.error(err.userMessage || "Could not remove it."); }
   };
 
   // typing 369 means employee 369 only - not 1369 as well, which is how the
@@ -126,7 +126,7 @@ export default function SalaryStructure() {
                     </p>
                     <p className="text-xs text-gray-500">{selected.emp_id} · Basic: Rs. {Number(selected.basicSalary).toLocaleString()}</p>
                   </div>
-                  <CustomButton color="purple" size="sm" onClick={() => { setEditData(null); setShowForm(true); }}>
+                  <CustomButton perm="salaryStructure.edit" color="purple" size="sm" onClick={() => { setEditData(null); setShowForm(true); }}>
                     <HiPlus className="mr-1.5 h-4 w-4" /> Assign Component
                   </CustomButton>
                 </div>
@@ -167,11 +167,11 @@ export default function SalaryStructure() {
                           <CustomTableCell><StatusBadge color={c.epfApplicable ? "success" : "gray"} className="w-fit text-xs">{c.epfApplicable ? "Yes" : "No"}</StatusBadge></CustomTableCell>
                           <CustomTableCell>
                             <div className="flex justify-center gap-2">
-                              <CustomButton size="xs" color="blue" outline pill
+                              <CustomButton perm="salaryStructure.edit" size="xs" color="blue" outline pill
                                 onClick={() => { setEditData(c); setShowForm(true); }}>
                                 <HiPencil className="h-3.5 w-3.5" />
                               </CustomButton>
-                              <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(c)}>
+                              <CustomButton perm="salaryStructure.edit" size="xs" color="failure" outline pill onClick={() => handleDelete(c)}>
                                 <HiTrash className="h-3.5 w-3.5" />
                               </CustomButton>
                             </div>

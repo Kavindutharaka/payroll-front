@@ -11,6 +11,8 @@ import {
   revokeIncrements, undoIncrementMerge,
 } from "../../../services/incrementBonusService";
 import { downloadCSV } from "../../../services/reportService";
+import { confirmDialog } from "../../../ui/feedback";
+import { useCan } from "../../../auth/AuthContext";
 
 const money = (v) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 // what the person will earn in basic + budgetary once the increment is in
@@ -34,6 +36,7 @@ export default function IncrementSheet() {
   const [savingId, setSaving] = useState(null);
   const [notice, setNotice]   = useState("");
 
+  const canEdit = useCan()("increment.edit");
   const applied = rows.length > 0 && rows.some((r) => r.status === "Applied");
   const merged  = rows.length > 0 && rows.every((r) => r.status === "Merged");
   const stage   = merged ? "Merged" : applied ? "Applied" : "Draft";
@@ -54,10 +57,11 @@ export default function IncrementSheet() {
 
   const handleGenerate = async () => {
     const typed = rows.filter((r) => r.status === "Draft" && Number(r.incrementAmount) > 0).length;
-    if (typed && !window.confirm(
-      `Regenerate the sheet for ${monthLabel(month)}?\n\n` +
-      `${typed} increment amount${typed === 1 ? " is" : "s are"} already typed in and will be cleared.`
-    )) return;
+    if (typed && !(await confirmDialog({
+      title: `Regenerate the ${monthLabel(month)} sheet?`,
+      message: `${typed} increment amount${typed === 1 ? " is" : "s are"} already typed in and will be cleared.`,
+      confirmLabel: "Regenerate", tone: "danger",
+    }))) return;
     setBusy("Generating…"); setError(""); setNotice("");
     try {
       const emps = await fetchActiveEmployees();
@@ -92,11 +96,11 @@ export default function IncrementSheet() {
   const handleApply = async () => {
     const changed = rows.filter((r) => Number(r.incrementAmount) > 0).length;
     if (changed === 0) { setError("Enter at least one increment amount first."); return; }
-    if (!window.confirm(
-      `Apply ${changed} increment${changed === 1 ? "" : "s"} for ${monthLabel(month)}?\n\n` +
-      `They will show as a separate Increment line on that month's payroll. ` +
-      `Basic salary is not changed yet — that happens when you merge them.`
-    )) return;
+    if (!(await confirmDialog({
+      title: `Apply ${changed} increment${changed === 1 ? "" : "s"} for ${monthLabel(month)}?`,
+      message: "They will show as a separate Increment line on that month's payroll. Basic salary is not changed yet — that happens when you merge them.",
+      confirmLabel: "Apply increments",
+    }))) return;
     setBusy("Applying…"); setError("");
     try { await applyIncrements(month); await load(month); }
     catch (e) { console.error(e); setError("Could not apply the increments."); }
@@ -104,13 +108,11 @@ export default function IncrementSheet() {
   };
 
   const handleMerge = async () => {
-    if (!window.confirm(
-      `Merge these increments into basic salary?
-
-` +
-      `Do this once ${monthLabel(month)} has been paid. From the next month the rise ` +
-      `becomes part of basic and the separate Increment line disappears. Undo Merge puts it back if needed.`
-    )) return;
+    if (!(await confirmDialog({
+      title: "Merge these increments into basic salary?",
+      message: `Do this once ${monthLabel(month)} has been paid. From the next month the rise becomes part of basic and the separate Increment line disappears. Undo Merge puts it back if needed.`,
+      confirmLabel: "Merge into basic",
+    }))) return;
     setBusy("Merging…"); setError("");
     try { await mergeIncrementsIntoBasic(month); await load(month); }
     catch (e) { console.error(e); setError("Could not merge the increments."); }
@@ -123,11 +125,11 @@ export default function IncrementSheet() {
 
   const handleRevoke = async () => {
     const n = rows.filter((r) => r.status === "Applied").length;
-    if (!window.confirm(
-      `Revoke ${plural(n, "applied increment")} for ${monthLabel(month)}?\n\n` +
-      `They go back to Draft with the amounts kept, so you can change them and apply again. ` +
-      `Recalculate ${monthLabel(month)} payroll afterwards so the Increment line comes off.`
-    )) return;
+    if (!(await confirmDialog({
+      title: `Revoke ${plural(n, "applied increment")} for ${monthLabel(month)}?`,
+      message: `They go back to Draft with the amounts kept, so you can change them and apply again. Recalculate ${monthLabel(month)} payroll afterwards so the Increment line comes off.`,
+      confirmLabel: "Revoke", tone: "danger",
+    }))) return;
     setBusy("Revoking…"); setError(""); setNotice("");
     try {
       const o = outcome(await revokeIncrements(month));
@@ -144,11 +146,11 @@ export default function IncrementSheet() {
 
   const handleUndoMerge = async () => {
     const n = rows.filter((r) => r.status === "Merged").length;
-    if (!window.confirm(
-      `Undo the merge for ${monthLabel(month)}?\n\n` +
-      `Basic salary goes back to the figure before the increment for ${plural(n, "employee")}, and the ` +
-      `increments return to Applied. Anyone whose basic salary was changed after the merge is left as they are.`
-    )) return;
+    if (!(await confirmDialog({
+      title: `Undo the merge for ${monthLabel(month)}?`,
+      message: `Basic salary goes back to the figure before the increment for ${plural(n, "employee")}, and the increments return to Applied. Anyone whose basic salary was changed after the merge is left as they are.`,
+      confirmLabel: "Undo merge", tone: "danger",
+    }))) return;
     setBusy("Undoing merge…"); setError(""); setNotice("");
     try {
       const o = outcome(await undoIncrementMerge(month));
@@ -206,26 +208,26 @@ export default function IncrementSheet() {
         )}
 
         <div className="flex flex-wrap items-center gap-3">
-          <CustomButton color="purple" disabled={!!busy || applied || merged} onClick={handleGenerate}>
+          <CustomButton perm="increment.edit" color="purple" disabled={!!busy || applied || merged} onClick={handleGenerate}>
             <HiRefresh className="mr-2 h-4 w-4" /> {rows.length ? "Regenerate Sheet" : "Generate Sheet"}
           </CustomButton>
           {!applied && !merged && rows.length > 0 && (
-            <CustomButton color="indigo" disabled={!!busy} onClick={handleApply}>
+            <CustomButton perm="increment.apply" color="indigo" disabled={!!busy} onClick={handleApply}>
               <HiCheck className="mr-2 h-4 w-4" /> Apply to {monthLabel(month)} Payroll
             </CustomButton>
           )}
           {applied && !merged && (
-            <CustomButton color="success" disabled={!!busy} onClick={handleMerge}>
+            <CustomButton perm="increment.apply" color="success" disabled={!!busy} onClick={handleMerge}>
               <HiTrendingUp className="mr-2 h-4 w-4" /> Merge into Basic Salary
             </CustomButton>
           )}
           {applied && !merged && (
-            <CustomButton color="failure" outline disabled={!!busy} onClick={handleRevoke}>
+            <CustomButton perm="increment.apply" color="failure" outline disabled={!!busy} onClick={handleRevoke}>
               <HiReply className="mr-2 h-4 w-4" /> Revoke
             </CustomButton>
           )}
           {merged && (
-            <CustomButton color="failure" outline disabled={!!busy} onClick={handleUndoMerge}>
+            <CustomButton perm="increment.apply" color="failure" outline disabled={!!busy} onClick={handleUndoMerge}>
               <HiReply className="mr-2 h-4 w-4" /> Undo Merge
             </CustomButton>
           )}
@@ -299,7 +301,7 @@ export default function IncrementSheet() {
                     <CustomTableCell className="text-sm text-gray-700 dark:text-gray-300">{money(r.currentBasic)}</CustomTableCell>
                     <CustomTableCell className="text-sm text-gray-700 dark:text-gray-300">{money(r.budgetaryAllowance)}</CustomTableCell>
                     <CustomTableCell>
-                      {r.status === "Draft" ? (
+                      {r.status === "Draft" && canEdit ? (
                         <input type="number" step="0.01" min="0" disabled={savingId === r.id}
                           value={r.incrementAmount ?? 0}
                           onChange={(e) => editAmount(r.id, e.target.value)}

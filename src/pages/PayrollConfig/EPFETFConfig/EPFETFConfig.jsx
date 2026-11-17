@@ -109,7 +109,7 @@ export default function EPFETFConfig() {
               </div>
 
               <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-gray-700">
-                <CustomButton color="purple" type="submit" disabled={saving}>
+                <CustomButton perm="payrollConfig.edit" color="purple" type="submit" disabled={saving}>
                   {saving ? "Saving…" : "Save Configuration"}
                 </CustomButton>
               </div>

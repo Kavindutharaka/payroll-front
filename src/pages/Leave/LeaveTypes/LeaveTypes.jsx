@@ -6,6 +6,7 @@ import LeaveTypeForm from "./LeaveTypeForm";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { CustomButton } from "../../../components/FormFields";
 import { fetchLeaveTypes, createLeaveType, updateLeaveType, deleteLeaveType } from "../../../services/leaveTypeService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 const boolBadge = (v, trueColor = "success", falseColor = "gray") =>
   <StatusBadge color={v ? trueColor : falseColor} className="w-fit text-xs">{v ? "Yes" : "No"}</StatusBadge>;
@@ -34,8 +35,8 @@ export default function LeaveTypes() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this leave type?")) return;
-    try { await deleteLeaveType(id); load(); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({ title: "Delete this leave type?", message: "Leave already recorded under it is kept.", confirmLabel: "Delete leave type", tone: "danger" }))) return;
+    try { await deleteLeaveType(id); notify.success("Leave type deleted."); load(); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
   return (
@@ -46,7 +47,7 @@ export default function LeaveTypes() {
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Leave Types</h1>
             <p className="mt-1 text-sm text-gray-500">Configure leave categories, limits and salary impact</p>
           </div>
-          <CustomButton color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
+          <CustomButton perm="leave.configure" color="purple" onClick={() => { setEditData(null); setShowForm(true); }}>
             <HiPlus className="mr-2 h-4 w-4" /> Create Leave Type
           </CustomButton>
         </div>
@@ -79,10 +80,10 @@ export default function LeaveTypes() {
                     <CustomTableCell>{boolBadge(lt.affectsSalary, "warning", "gray")}</CustomTableCell>
                     <CustomTableCell>
                       <div className="flex justify-center gap-2">
-                        <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditData(lt); setShowForm(true); }}>
+                        <CustomButton perm="leave.configure" size="xs" color="blue" outline pill onClick={() => { setEditData(lt); setShowForm(true); }}>
                           <HiPencil className="h-3.5 w-3.5" />
                         </CustomButton>
-                        <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(lt.id)}>
+                        <CustomButton perm="leave.configure" size="xs" color="failure" outline pill onClick={() => handleDelete(lt.id)}>
                           <HiTrash className="h-3.5 w-3.5" />
                         </CustomButton>
                       </div>

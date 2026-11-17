@@ -20,6 +20,7 @@ import {
   noPayFromDays, DAYS_IN_MONTH, setRunPeriod, fetchPeriodEmployees,
   BULK_FIELDS, parseBulkCsv, applyBulkUpdates, countStructureChangesSince, countRevokedIncrements,
 } from "../../../services/payrollRunService";
+import { useCan } from "../../../auth/AuthContext";
 
 const statusSteps  = ["Draft", "Approved", "Paid"];
 const statusColor  = { Draft: "warning", Approved: "indigo", Paid: "success" };
@@ -102,7 +103,9 @@ export default function RunPayroll() {
 
   const status    = run?.status ?? "Draft";
   const stepIndex = statusSteps.indexOf(status);
-  const locked    = status === "Paid";
+  const can       = useCan();
+  const viewOnly  = !can("payroll.calculate");
+  const locked    = status === "Paid" || viewOnly;
 
   /* ---------- load whatever already exists for the month ---------- */
   /* Loading a month takes a moment, and until it lands the screen still holds the
@@ -557,7 +560,7 @@ export default function RunPayroll() {
             <CustomInput id="pTo" type="date" value={pTo} disabled={locked}
               onChange={(e) => setPTo(e.target.value)} className="w-40" />
           </div>
-          <CustomButton color="gray" outline size="sm" disabled={!run || !!busy || locked} onClick={savePeriod}>
+          <CustomButton perm="payroll.calculate" color="gray" outline size="sm" disabled={!run || !!busy || locked} onClick={savePeriod}>
             Save Period
           </CustomButton>
           <p className="flex-1 text-xs text-gray-400">
@@ -593,21 +596,21 @@ export default function RunPayroll() {
 
         {/* Actions */}
         <div className="flex flex-wrap items-center gap-3">
-          <CustomButton color="purple" disabled={!run || !!busy || locked}
+          <CustomButton perm="payroll.calculate" color="purple" disabled={!run || !!busy || locked}
             onClick={() => (overrideCount > 0 ? setAskRebuild(true) : handleCalculate("keep"))}>
             <HiPlay className="mr-2 h-4 w-4" /> {rows.length ? "Recalculate" : "Calculate"}
           </CustomButton>
           {status === "Draft" && rows.length > 0 && (
-            <CustomButton color="indigo" disabled={!!busy} onClick={() => changeStatus("Approved")}>
+            <CustomButton perm="payroll.approve" color="indigo" disabled={!!busy} onClick={() => changeStatus("Approved")}>
               <HiCheck className="mr-2 h-4 w-4" /> Approve Payroll
             </CustomButton>
           )}
           {status === "Approved" && (
             <>
-              <CustomButton color="success" disabled={!!busy} onClick={() => changeStatus("Paid")}>
+              <CustomButton perm="payroll.approve" color="success" disabled={!!busy} onClick={() => changeStatus("Paid")}>
                 <HiLockClosed className="mr-2 h-4 w-4" /> Lock &amp; Mark as Paid
               </CustomButton>
-              <CustomButton color="gray" outline disabled={!!busy} onClick={() => changeStatus("Draft")}>
+              <CustomButton perm="payroll.approve" color="gray" outline disabled={!!busy} onClick={() => changeStatus("Draft")}>
                 <HiRefresh className="mr-2 h-4 w-4" /> Back to Draft
               </CustomButton>
             </>
@@ -626,7 +629,7 @@ export default function RunPayroll() {
               onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; importEdited(f); }} />
           </label>
           {busy && <span className="text-sm text-gray-500">{busy}</span>}
-          {locked && <span className="text-sm text-gray-500">This payroll is locked and cannot be changed.</span>}
+          {locked && <span className="text-sm text-gray-500">{viewOnly ? "View only — your role can't change the payroll." : "This payroll is locked and cannot be changed."}</span>}
         </div>
 
         {askRebuild && (

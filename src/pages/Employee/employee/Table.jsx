@@ -6,6 +6,7 @@ import EmployeeForm from "./EmployeeForm";
 import { CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { fetchEmployees, createEmployee, updateEmployee, deleteEmployee, forgetEmployeeChoices } from "../../../services/employeeService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 const categoryColor = {
   "Main - Upper School":               "indigo",
@@ -84,12 +85,13 @@ export function EmployeeTable() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this employee?")) return;
+    if (!(await confirmDialog({ title: "Delete this employee?", message: "They will be taken off the employee list. Payroll already run for them is kept.", confirmLabel: "Delete employee", tone: "danger" }))) return;
     try {
-      await deleteEmployee(id);
+      await deleteEmployee(id); notify.success("Employee deleted.");
       load();
     } catch (err) {
       console.error("Delete failed:", err);
+      notify.error(err.userMessage || "The employee could not be deleted.");
     }
   };
 
@@ -118,7 +120,7 @@ export function EmployeeTable() {
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Employees</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage and organize your employee records</p>
         </div>
-        <CustomButton onClick={handleAdd} color="purple">
+        <CustomButton perm="employees.edit" onClick={handleAdd} color="purple">
           <HiPlus className="mr-2 h-4 w-4" /> Add Employee
         </CustomButton>
       </div>
@@ -226,10 +228,10 @@ export function EmployeeTable() {
                   </CustomTableCell>
                   <CustomTableCell>
                     <div className="flex items-center justify-center gap-2">
-                      <CustomButton size="xs" color="blue" outline pill onClick={() => handleEdit(emp)}>
+                      <CustomButton perm="employees.edit" size="xs" color="blue" outline pill onClick={() => handleEdit(emp)}>
                         <HiPencil className="h-3.5 w-3.5" />
                       </CustomButton>
-                      <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(emp.id)}>
+                      <CustomButton perm="employees.delete" size="xs" color="failure" outline pill onClick={() => handleDelete(emp.id)}>
                         <HiTrash className="h-3.5 w-3.5" />
                       </CustomButton>
                     </div>

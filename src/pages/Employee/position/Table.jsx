@@ -5,6 +5,7 @@ import PositionForm from "./PositionForm";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { CustomButton } from "../../../components/FormFields";
 import { fetchPositions, createPosition, updatePosition, deletePosition } from "../../../services/positionService";
+import { notify, confirmDialog } from "../../../ui/feedback";
 
 export function PositionTable() {
   const [positions, setPositions] = useState([]);
@@ -30,8 +31,8 @@ export function PositionTable() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this position?")) return;
-    try { await deletePosition(id); load(); } catch (err) { console.error(err); }
+    if (!(await confirmDialog({ title: "Delete this position?", message: "Employees already in this position keep it on their record.", confirmLabel: "Delete position", tone: "danger" }))) return;
+    try { await deletePosition(id); notify.success("Position deleted."); load(); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
   return (
@@ -41,7 +42,7 @@ export function PositionTable() {
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Employee Positions</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage and organize your employee positions</p>
         </div>
-        <CustomButton onClick={() => { setEditData(null); setOpenModal(true); }} color="purple">
+        <CustomButton perm="positions.edit" onClick={() => { setEditData(null); setOpenModal(true); }} color="purple">
           <HiPlus className="mr-2 h-4 w-4" /> Add Position
         </CustomButton>
       </div>
@@ -69,10 +70,10 @@ export function PositionTable() {
                   <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{pos.description}</CustomTableCell>
                   <CustomTableCell>
                     <div className="flex items-center justify-center gap-2">
-                      <CustomButton size="xs" color="blue" outline pill onClick={() => { setEditData(pos); setOpenModal(true); }}>
+                      <CustomButton perm="positions.edit" size="xs" color="blue" outline pill onClick={() => { setEditData(pos); setOpenModal(true); }}>
                         <HiPencil className="h-3.5 w-3.5" />
                       </CustomButton>
-                      <CustomButton size="xs" color="failure" outline pill onClick={() => handleDelete(pos.id)}>
+                      <CustomButton perm="positions.delete" size="xs" color="failure" outline pill onClick={() => handleDelete(pos.id)}>
                         <HiTrash className="h-3.5 w-3.5" />
                       </CustomButton>
                     </div>

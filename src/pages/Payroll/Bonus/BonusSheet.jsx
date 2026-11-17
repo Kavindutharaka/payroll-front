@@ -17,6 +17,8 @@ import {
 import { fetchTaxSlabs } from "../../../services/taxService";
 import { calcPAYE } from "../../../services/payrollRunService";
 import { downloadCSV } from "../../../services/reportService";
+import { confirmDialog } from "../../../ui/feedback";
+import { useCan } from "../../../auth/AuthContext";
 
 const DEFAULT_MODE = "Tax Table 1";   // the monthly table, used when someone has no payroll month yet
 
@@ -41,6 +43,7 @@ export default function BonusSheet() {
   const [slabs, setSlabs]     = useState([]);
   const [basics, setBasics]   = useState({});   // emp_id -> basic salary now
 
+  const canEdit = useCan()("bonus.edit");
   const finalised = rows.length > 0 && rows.every((r) => r.status === "Finalised");
 
   const load = useCallback(async (m) => {
@@ -203,7 +206,11 @@ export default function BonusSheet() {
   };
 
   const handleFinalise = async () => {
-    if (!window.confirm(`Finalise the bonus sheet for ${monthLabel(month)}? Amounts and PAYE can no longer be edited afterwards.`)) return;
+    if (!(await confirmDialog({
+      title: `Finalise the ${monthLabel(month)} bonus sheet?`,
+      message: "Amounts and PAYE can't be edited afterwards.",
+      confirmLabel: "Finalise",
+    }))) return;
     setBusy("Finalising…"); setError("");
     try {
       // typed figures are already stored and stay as they are
@@ -265,11 +272,11 @@ export default function BonusSheet() {
         )}
 
         <div className="flex flex-wrap items-center gap-3">
-          <CustomButton color="purple" disabled={!!busy || finalised} onClick={handleGenerate}>
+          <CustomButton perm="bonus.edit" color="purple" disabled={!!busy || finalised} onClick={handleGenerate}>
             <HiRefresh className="mr-2 h-4 w-4" /> {rows.length ? "Regenerate Sheet" : "Generate Sheet"}
           </CustomButton>
           {!finalised && rows.length > 0 && (
-            <CustomButton color="success" disabled={!!busy} onClick={handleFinalise}>
+            <CustomButton perm="bonus.finalise" color="success" disabled={!!busy} onClick={handleFinalise}>
               <HiCheck className="mr-2 h-4 w-4" /> Finalise Sheet
             </CustomButton>
           )}
@@ -326,7 +333,7 @@ export default function BonusSheet() {
                     <CustomTableCell className="text-sm text-gray-700 dark:text-gray-300">{money(r.basicSalary)}</CustomTableCell>
                     <CustomTableCell className="text-sm text-gray-700 dark:text-gray-300">{money(r.budgetaryAllowance)}</CustomTableCell>
                     <CustomTableCell>
-                      {r.status === "Draft" ? (
+                      {r.status === "Draft" && canEdit ? (
                         <input type="number" step="0.5" min="0" disabled={savingId === r.id}
                           value={r.leaveDays ?? 0}
                           onChange={(e) => editLeave(r.id, e.target.value)}
@@ -346,7 +353,7 @@ export default function BonusSheet() {
                       );
                     })()}
                     <CustomTableCell>
-                      {r.status === "Draft" ? (
+                      {r.status === "Draft" && canEdit ? (
                         <input type="number" step="1" min="0" disabled={savingId === r.id}
                           value={r.lateDays ?? 0}
                           onChange={(e) => editLate(r.id, e.target.value)}
@@ -369,7 +376,7 @@ export default function BonusSheet() {
                       {deductionOf(r) ? `− ${money(deductionOf(r))}` : "—"}
                     </CustomTableCell>
                     <CustomTableCell>
-                      {r.status === "Draft" ? (
+                      {r.status === "Draft" && canEdit ? (
                         <input type="number" step="0.01" min="0" disabled={savingId === r.id}
                           value={r.bonusAmount ?? 0}
                           onChange={(e) => editAmount(r.id, e.target.value)}
@@ -388,7 +395,7 @@ export default function BonusSheet() {
                           title={`Y/A ${ya.start} to ${ya.end}: A ${money(t.A)} + B ${money(t.B)} + C ${money(t.C)} = D ${money(t.D)}` +
                             ` · rate ${t.rate}% · monthly tax A ${money(t.taxA)}, B ${money(t.taxB)}` +
                             (t.estimatedMonths ? ` · ${t.estimatedMonths} month(s) estimated from the latest payroll` : "")}>
-                          {r.status === "Draft" && isManual(r) ? (
+                          {r.status === "Draft" && canEdit && isManual(r) ? (
                             <span className="inline-flex items-center gap-1.5">
                               <input type="number" step="1" min="0" disabled={savingId === r.id}
                                 value={r.paye ?? 0}
@@ -405,8 +412,8 @@ export default function BonusSheet() {
                             <span className="inline-flex items-center gap-1">
                               {money(paye)}
                               {r.status === "Draft" && t.estimatedMonths > 0 && <span className="text-[10px] text-gray-400">est.</span>}
-                              {r.status === "Finalised" && isManual(r) && <span className="text-[10px] text-amber-700">manual</span>}
-                              {r.status === "Draft" && (
+                              {isManual(r) && (r.status === "Finalised" || !canEdit) && <span className="text-[10px] text-amber-700">manual</span>}
+                              {r.status === "Draft" && canEdit && (
                                 <button type="button" disabled={savingId === r.id} title="Type a PAYE figure for this person"
                                   onClick={() => commitPaye({ ...r, paye: t.paye })}
                                   className="ml-1 text-gray-400 hover:text-purple-600 disabled:opacity-50">✎</button>

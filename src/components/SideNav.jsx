@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import { canOpen } from "../auth/access";
+import { ChangePasswordModal } from "../pages/Auth/ChangePassword";
 import {
   HiChartPie,
   HiUsers,
@@ -24,6 +27,10 @@ import {
   HiChevronDown,
   HiTrendingUp,
   HiGift,
+  HiShieldCheck,
+  HiKey,
+  HiLogout,
+  HiSelector,
 } from "react-icons/hi";
 
 const navGroups = [
@@ -103,7 +110,78 @@ const navGroups = [
       { href: "/documents", label: "Payroll Files", icon: HiFolderOpen },
     ],
   },
+  {
+    label: "ADMINISTRATION",
+    items: [
+      { href: "/admin/users", label: "Users & Roles", icon: HiShieldCheck },
+    ],
+  },
 ];
+
+/* Only what the signed-in person's role can open; empty sections disappear. */
+function visibleGroups(can) {
+  return navGroups
+    .map((g) => ({
+      ...g,
+      items: g.items
+        .map((it) => (it.children ? { ...it, children: it.children.filter((c) => canOpen(can, c.href)) } : it))
+        .filter((it) => (it.children ? it.children.length > 0 : canOpen(can, it.href))),
+    }))
+    .filter((g) => g.items.length > 0);
+}
+
+const initials = (name = "") =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
+
+function AccountMenu() {
+  const { user, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [changing, setChanging] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const esc = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", away); document.removeEventListener("keydown", esc); };
+  }, [open]);
+
+  if (!user) return null;
+  return (
+    <div ref={ref} className="relative flex-shrink-0 border-t border-gray-100 p-3 dark:border-gray-700">
+      {open && (
+        <div role="menu" className="fb-pop absolute bottom-full left-3 right-3 mb-2 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+          <div className="border-b border-gray-100 px-3 py-2 dark:border-gray-700">
+            <p className="truncate text-xs text-gray-500 dark:text-gray-400">Signed in as</p>
+            <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{user.username}</p>
+          </div>
+          <button role="menuitem" type="button" onClick={() => { setOpen(false); setChanging(true); }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
+            <HiKey className="h-4 w-4 text-gray-400" /> Change password
+          </button>
+          <button role="menuitem" type="button" onClick={logout}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
+            <HiLogout className="h-4 w-4 text-gray-400" /> Sign out
+          </button>
+        </div>
+      )}
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}
+        className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800">
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#29166F] text-xs font-semibold text-white">
+          {initials(user.displayName)}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-gray-800 dark:text-gray-100">{user.displayName}</span>
+          <span className="block truncate text-xs text-gray-500 dark:text-gray-400">{user.role}</span>
+        </span>
+        <HiSelector className="h-4 w-4 flex-shrink-0 text-gray-400" />
+      </button>
+      {changing && <ChangePasswordModal onClose={() => setChanging(false)} />}
+    </div>
+  );
+}
 
 // Build initial open state: auto-open sections that contain the active route
 function getInitialOpen(pathname) {
@@ -120,6 +198,8 @@ function getInitialOpen(pathname) {
 
 export function SideNav() {
   const { pathname } = useLocation();
+  const { can } = useAuth();
+  const groups = visibleGroups(can);
   const [openSections, setOpenSections] = useState(() => getInitialOpen(pathname));
 
   const toggle = (label) =>
@@ -133,18 +213,16 @@ export function SideNav() {
 
       {/* Brand */}
       <div className="flex flex-shrink-0 items-center gap-3 border-b border-gray-100 px-4 py-4 dark:border-gray-700">
-        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-purple-600">
-          <HiCurrencyDollar className="h-5 w-5 text-white" />
-        </div>
+        <img src="/ais-logo.jpg" alt="" className="h-9 w-9 flex-shrink-0 rounded-md bg-white object-contain" />
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-gray-800 dark:text-white">PayrollPro</p>
-          <p className="truncate text-xs text-gray-400 dark:text-gray-500">Management System</p>
+          <p className="truncate text-sm font-semibold text-gray-800 dark:text-white">AIS Payroll</p>
+          <p className="truncate text-xs text-gray-400 dark:text-gray-500">Asian International School</p>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex flex-1 flex-col gap-5 overflow-x-hidden px-3 py-4">
-        {navGroups.map((group, gi) => (
+        {groups.map((group, gi) => (
           <div key={gi} className="flex flex-col gap-1">
 
             {/* Section Label */}
@@ -159,9 +237,9 @@ export function SideNav() {
               if (item.href) {
                 const active = isActive(item.href);
                 return (
-                  <a
+                  <Link
                     key={item.href}
-                    href={item.href}
+                    to={item.href}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                       active
                         ? "bg-purple-600 text-white shadow-sm"
@@ -170,7 +248,7 @@ export function SideNav() {
                   >
                     <item.icon className="h-4.5 w-4.5 flex-shrink-0 h-5 w-5" />
                     <span className="truncate">{item.label}</span>
-                  </a>
+                  </Link>
                 );
               }
 
@@ -203,9 +281,9 @@ export function SideNav() {
                       {item.children.map((child) => {
                         const childActive = isActive(child.href);
                         return (
-                          <a
+                          <Link
                             key={child.href}
-                            href={child.href}
+                            to={child.href}
                             className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
                               childActive
                                 ? "bg-purple-600 font-medium text-white"
@@ -214,7 +292,7 @@ export function SideNav() {
                           >
                             <child.icon className="h-4 w-4 flex-shrink-0" />
                             <span className="truncate">{child.label}</span>
-                          </a>
+                          </Link>
                         );
                       })}
                     </div>
@@ -226,12 +304,7 @@ export function SideNav() {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3 dark:border-gray-700">
-        <p className="truncate text-center text-xs text-gray-400 dark:text-gray-600">
-          PayrollPro v1.0
-        </p>
-      </div>
+      <AccountMenu />
     </aside>
   );
 }

@@ -338,18 +338,18 @@ export default function Payslip() {
                         placeholder="350"
                         className="w-24 rounded-lg border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
                     </div>
-                    <CustomButton color="gray" outline size="sm"
+                    <CustomButton perm="payslips.print" color="gray" outline size="sm"
                       disabled={inRange().length === 0}
                       onClick={() => printBatch(inRange())}>
                       <HiPrinter className="mr-2 h-4 w-4" /> Print range ({inRange().length})
                     </CustomButton>
-                    <CustomButton color="gray" outline size="sm"
+                    <CustomButton perm="payslips.print" color="gray" outline size="sm"
                       disabled={rows.length === 0}
                       onClick={() => printBatch(rows)}>
                       <HiPrinter className="mr-2 h-4 w-4" /> Print all ({rows.length})
                     </CustomButton>
                   </div>
-                  <CustomButton color="purple" size="sm" onClick={() => window.print()}>
+                  <CustomButton perm="payslips.print" color="purple" size="sm" onClick={() => window.print()}>
                     <HiPrinter className="mr-2 h-4 w-4" /> Print this one
                   </CustomButton>
                 </div>

@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { HiChevronDown, HiCalendar } from "react-icons/hi";
+import { useCan } from "../auth/AuthContext";
 
 /* ─── CustomLabel — replaces <Label> ────────────────────────────────────── */
 export function CustomLabel({ htmlFor, className = "", children }) {
@@ -174,7 +175,9 @@ const BTN_SIZE = {
   lg: "px-5 py-2.5 text-base gap-2",
 };
 
+/* `perm="employees.edit"` hides the button from roles that don't include it. */
 export function CustomButton({
+  perm,
   color = "purple",
   size,
   outline = false,
@@ -184,6 +187,8 @@ export function CustomButton({
   children,
   ...props
 }) {
+  const can = useCan();
+  if (perm && !can(perm)) return null;
   const colorCls = (outline ? BTN_OUTLINE : BTN_SOLID)[color] ?? (outline ? BTN_OUTLINE.purple : BTN_SOLID.purple);
   const sizeCls  = BTN_SIZE[size] ?? BTN_SIZE.md;
   const shape    = pill ? "rounded-full" : "rounded-lg";
