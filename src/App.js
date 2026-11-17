@@ -35,6 +35,7 @@ import BonusSheet from './pages/Payroll/Bonus/BonusSheet';
 
 // Reports
 import Reports from './pages/Reports/Reports';
+import Documents from './pages/Documents/Documents';
 
 function App() {
   return (
@@ -75,6 +76,7 @@ function App() {
 
         {/* Reports */}
         <Route path="/reports" element={<Reports />} />
+        <Route path="/documents" element={<Documents />} />
       </Routes>
     </Router>
   );

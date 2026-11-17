@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
-import { fetchActiveEmployees } from "../../../services/employeeService";
+import { fetchEmployeeChoices } from "../../../services/employeeService";
 import { fetchLoanTypes } from "../../../services/loanTypeService";
 import EmployeePicker from "../../../components/EmployeePicker";
 import { loanStanding, monthlyInterestOf } from "../../../services/loanService";
@@ -18,7 +18,7 @@ const todayIso = () => {
  * editable. Nadee asked for that second part directly - when a member of staff
  * resigns she has to recover the whole remaining balance in their final month,
  * which the principal-over-installments arithmetic will never produce. */
-export default function EmployeeLoanForm({ closeForm, onSave, loan = null, saving = false }) {
+export default function EmployeeLoanForm({ closeForm, onSave, loan = null, saving = false, saveError = "" }) {
   const editing = Boolean(loan);
   const [employees, setEmployees]   = useState([]);
   const [loanTypes, setLoanTypes]   = useState([]);
@@ -48,7 +48,7 @@ export default function EmployeeLoanForm({ closeForm, onSave, loan = null, savin
   const [manual, setManual] = useState(editing);
 
   useEffect(() => {
-    fetchActiveEmployees().then((d)  => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
+    fetchEmployeeChoices().then((d)  => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
     fetchLoanTypes().then((d) => setLoanTypes(Array.isArray(d) ? d : [])).catch(console.error);
   }, []);
 
@@ -221,6 +221,9 @@ export default function EmployeeLoanForm({ closeForm, onSave, loan = null, savin
               month until the last installment, so it would keep deducting after the loan is repaid. Correct the number
               of installments or the monthly amount; if this is a final settlement, close the loan once that month is paid.
             </div>
+          )}
+          {saveError && (
+            <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-700 dark:bg-red-900/20 dark:text-red-300">{saveError}</div>
           )}
           <div className="flex justify-end gap-3 border-t border-gray-100 pt-2 dark:border-gray-700">
             <CustomButton color="gray" type="button" onClick={closeForm}>Cancel</CustomButton>

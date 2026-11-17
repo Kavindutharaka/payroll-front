@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { StatusBadge } from "../../../components/StatusBadge";
 import Layout from "../../../components/Layout";
 import { Progress } from "flowbite-react";
 import { HiPlus, HiX, HiPencil, HiSearch } from "react-icons/hi";
 import EmployeeLoanForm from "./EmployeeLoanForm";
+import { fetchOpenPayrollMonth } from "../../../services/payrollRunService";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { CustomButton, CustomInput, CustomSelect } from "../../../components/FormFields";
 import {
@@ -32,6 +33,19 @@ export default function EmployeeLoan() {
    * on what is being recovered this month; "All months" shows everything. */
   const [scope, setScope]       = useState("month");
   const [inMonth, setInMonth]   = useState(() => today().slice(0, 7));
+  /* The payroll month still open - October's is finished in November, so going by
+   * the calendar showed November's (empty) advances. Everything on this page is
+   * measured against it: recovered means recovered in a month already paid. */
+  const [payMonth, setPayMonth] = useState(() => today().slice(0, 7));
+  const [error, setError]       = useState("");
+  const touchedMonth = useRef(false);
+  useEffect(() => {
+    fetchOpenPayrollMonth().then((m) => {
+      if (!m) return;
+      setPayMonth(m);
+      if (!touchedMonth.current) setInMonth(m);
+    }).catch(console.error);
+  }, []);
 
   const load = async () => {
     setLoading(true);
@@ -46,13 +60,16 @@ export default function EmployeeLoan() {
     // one save at a time - a double click on Grant Loan gave emp 789 the same
     // insurance loan twice, 0.24 seconds apart
     if (saving) return;
-    setSaving(true);
+    setSaving(true); setError("");
     try {
       if (editing) await updateLoan(editing.id, data);
       else await createLoan(data);
       closeDialog();
       load();
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      setError("The loan could not be saved — nothing was changed. Please try again.");
+    }
     finally { setSaving(false); }
   };
 
@@ -64,11 +81,12 @@ export default function EmployeeLoan() {
     try { await closeLoan(id); load(); } catch (err) { console.error(err); }
   };
 
-  // where each loan stands today, from its schedule - the stored balance never moves
-  const asOf = today();
+  // where each loan stands at the start of the open payroll month, from its
+  // schedule - the stored balance never moves
+  const asOf = `${payMonth}-01`;
   const standing = useMemo(
     () => Object.fromEntries(loans.map((l) => [l.id, loanStanding(l, asOf)])), [loans, asOf]);
-  const thisMonth = asOf.slice(0, 7);
+  const thisMonth = payMonth;
   const active = loans.filter((l) => ["Active", "Upcoming"].includes(standing[l.id]?.state));
 
   // the EPF number is what Nadee works from, so it is both the search and the order
@@ -111,6 +129,12 @@ export default function EmployeeLoan() {
             <HiPlus className="mr-2 h-4 w-4" /> Grant Loan
           </CustomButton>
         </div>
+
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+            {error}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[
@@ -159,7 +183,7 @@ export default function EmployeeLoan() {
               </CustomSelect>
             </div>
             {scope === "month" && (
-              <input type="month" value={inMonth} onChange={(e) => setInMonth(e.target.value)}
+              <input type="month" value={inMonth} onChange={(e) => { touchedMonth.current = true; setInMonth(e.target.value); }}
                 aria-label="Recovery month"
                 className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200" />
             )}
@@ -243,7 +267,7 @@ export default function EmployeeLoan() {
       </div>
       {showForm && (
         <EmployeeLoanForm key={editing?.id ?? "new"} loan={editing}
-          closeForm={closeDialog} onSave={handleSave} saving={saving} />
+          closeForm={() => { closeDialog(); setError(""); }} onSave={handleSave} saving={saving} saveError={error} />
       )}
     </Layout>
   );

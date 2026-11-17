@@ -5,7 +5,7 @@ import { displayName } from "../../Payroll/Payslip/Payslip";
 import EmployeeForm from "./EmployeeForm";
 import { CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
-import { fetchEmployees, createEmployee, updateEmployee, deleteEmployee } from "../../../services/employeeService";
+import { fetchEmployees, createEmployee, updateEmployee, deleteEmployee, forgetEmployeeChoices } from "../../../services/employeeService";
 
 const categoryColor = {
   "Main - Upper School":               "indigo",
@@ -56,18 +56,30 @@ export function EmployeeTable() {
 
   useEffect(() => { load(); }, []);
 
+  /* A failed save used to go to the console only, and a slow one showed nothing
+   * at all, so "Update Employee" looked dead (Nadee, 30 Oct). The form now shows
+   * "Saving…" and any error, and a second click cannot send it twice. */
+  const [saving, setSaving]       = useState(false);
+  const [saveError, setSaveError] = useState("");
+
   const handleSave = async (formData) => {
+    if (saving) return;
+    setSaving(true); setSaveError("");
     try {
       if (editData) {
         await updateEmployee(editData.id, formData);
       } else {
         await createEmployee(formData);
       }
+      forgetEmployeeChoices();
       setOpenModal(false);
       setEditData(null);
       load();
     } catch (err) {
       console.error("Save failed:", err);
+      setSaveError("The employee could not be saved — nothing was changed. Check the connection and try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -243,9 +255,11 @@ export function EmployeeTable() {
 
       {openModal && (
         <EmployeeForm
-          closeForm={() => { setOpenModal(false); setEditData(null); }}
+          closeForm={() => { setOpenModal(false); setEditData(null); setSaveError(""); }}
           initialData={editData}
           onSave={handleSave}
+          saving={saving}
+          saveError={saveError}
         />
       )}
     </div>

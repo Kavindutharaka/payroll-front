@@ -101,6 +101,11 @@ export const regenerateIncrementSheet = (month, employees) => regenerate(
  * normally paid in December. Amounts stay editable per employee.
  * ====================================================== */
 
+/* Each person's basic salary now, to catch a sheet generated before a change -
+ * December's was made on 14 Oct, before September's increments went into basic. */
+export const fetchCurrentBasics = () =>
+  execSQL(`SELECT emp_id, basicSalary FROM dbo.payroll_employee WHERE status <> 'Deleted'`);
+
 export const fetchBonuses = (month) =>
   execSQL(`
     SELECT b.*,
@@ -184,6 +189,15 @@ export const fetchBonusLate = (month) => {
 
 export const saveBonusLate = (id, lateDays, bonusAmount) =>
   execSQL(`EXEC ${BONUS_SP} @action='LATE',@id=${num(id)},@lateDays=${num(lateDays)},@bonusAmount=${num(bonusAmount)}`);
+
+/* A PAYE figure typed in by hand. The formula assumes the latest month's gross
+ * repeats for the months it cannot see, which is wrong for anyone whose pay
+ * varies month to month (11 Nov meeting), so Nadee can enter the figure herself.
+ * Passing null goes back to the formula. */
+export const saveBonusPayeManual = (id, paye) =>
+  execSQL(paye === null
+    ? `EXEC ${BONUS_SP} @action='PAYEMANUAL',@id=${num(id)},@payeManual=0`
+    : `EXEC ${BONUS_SP} @action='PAYEMANUAL',@id=${num(id)},@paye=${num(paye)},@payeManual=1`);
 
 // stores the worked-out PAYE on each draft row, just before the sheet is finalised
 export const saveBonusPaye = async (items, batchSize = 40) => {

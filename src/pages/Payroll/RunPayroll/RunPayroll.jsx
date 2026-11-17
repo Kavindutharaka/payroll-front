@@ -14,7 +14,7 @@ import { fetchEPFETFConfig } from "../../../services/epfEtfConfigService";
 import { downloadCSV } from "../../../services/reportService";
 import { displayName } from "../Payslip/Payslip";
 import {
-  openRun, fetchRunDetails, refreshRunTotals, countExpectedForPeriod,
+  openRun, fetchRunDetails, refreshRunTotals, countExpectedForPeriod, fetchOpenPayrollMonth,
   setRunStatus, replaceRunDetails, computePayroll,
   updateRunDetail, recomputeDetailRow, resolveComponentValue,
   noPayFromDays, DAYS_IN_MONTH, setRunPeriod, fetchPeriodEmployees,
@@ -73,7 +73,12 @@ function MonthlyInput({ row, field, locked, saving, onChange, onCommit, width = 
 }
 
 export default function RunPayroll() {
-  const [month, setMonth]         = useState(thisMonth);
+  // null until the open payroll month is known - October's payroll is finished in
+  // November, so opening on the calendar month showed an empty November run
+  const [month, setMonth]         = useState(null);
+  useEffect(() => {
+    fetchOpenPayrollMonth().then((m) => setMonth(m || thisMonth())).catch(() => setMonth(thisMonth()));
+  }, []);
   const [run, setRun]             = useState(null);
   const [rows, setRows]           = useState([]);
   const [filterCat, setFilterCat] = useState("all");
@@ -113,12 +118,16 @@ export default function RunPayroll() {
     try {
       const head = await openRun(m);
       const r = Array.isArray(head) ? head[0] : head;
-      const details = r ? (await fetchRunDetails(r.id)) || [] : [];
-      const changes = r ? await countStructureChangesSince(m).catch(() => 0) : 0;
-      const pending = await countRevokedIncrements(m).catch(() => 0);
-      const should  = r?.periodFrom && r?.periodTo
-        ? await countExpectedForPeriod(String(r.periodFrom).slice(0, 10), String(r.periodTo).slice(0, 10)).catch(() => 0)
-        : 0;
+      // side by side, not one after another: each request costs about a second
+      // before any data moves, so five in a row kept the screen blank for 8-9 s
+      const [details, changes, pending, should] = await Promise.all([
+        r ? fetchRunDetails(r.id).then((d) => d || []) : [],
+        r ? countStructureChangesSince(m).catch(() => 0) : 0,
+        countRevokedIncrements(m).catch(() => 0),
+        r?.periodFrom && r?.periodTo
+          ? countExpectedForPeriod(String(r.periodFrom).slice(0, 10), String(r.periodTo).slice(0, 10)).catch(() => 0)
+          : 0,
+      ]);
       if (seq !== loadSeq.current) return;   // another month was picked meanwhile
       setRun(r ?? null);
       setPFrom(r?.periodFrom ? String(r.periodFrom).slice(0, 10) : "");
@@ -138,7 +147,7 @@ export default function RunPayroll() {
   // true only when the run on screen belongs to the month in the picker
   const runIsCurrent = Boolean(run) && run.runMonth === month && !loading;
 
-  useEffect(() => { loadRun(month); }, [month, loadRun]);
+  useEffect(() => { if (month) loadRun(month); }, [month, loadRun]);
   useEffect(() => { setPage(1); }, [month, filterCat, staffType, query, perPage]);
 
   // Tax slabs + EPF rates are needed to re-run the engine when a figure is edited.
@@ -162,6 +171,23 @@ export default function RunPayroll() {
     }));
   };
 
+  /* The run's stored totals only feed the dashboard and summaries - the grid adds
+   * its own - so they are refreshed once typing pauses rather than after every
+   * figure, which had each row's boxes locked for two round trips. */
+  const totalsTimer = useRef(null);
+  const totalsFor   = useRef(null);   // the run still waiting for its totals
+  const flushTotals = () => {
+    clearTimeout(totalsTimer.current);
+    if (totalsFor.current) { refreshRunTotals(totalsFor.current).catch(console.error); totalsFor.current = null; }
+  };
+  const refreshTotalsSoon = (runId) => {
+    clearTimeout(totalsTimer.current);
+    totalsFor.current = runId;
+    totalsTimer.current = setTimeout(flushTotals, 2000);
+  };
+  // leaving the page, or changing month, never skips the refresh
+  useEffect(() => flushTotals, [month]);   // eslint-disable-line react-hooks/exhaustive-deps
+
   const commitField = async (row) => {
     if (locked) return;
     setSavingId(row.id);
@@ -170,7 +196,7 @@ export default function RunPayroll() {
       const merged = { ...row, ...calc };
       setRows((prev) => prev.map((r) => (r.id === row.id ? merged : r)));
       await updateRunDetail(row.id, merged);
-      await refreshRunTotals(run.id);
+      refreshTotalsSoon(run.id);
     } catch (e) {
       console.error(e);
       setError("Could not save that change.");
@@ -440,6 +466,7 @@ export default function RunPayroll() {
   const changeStatus = async (next) => {
     setBusy("Updating…");
     if (!runIsCurrent) return;
+    flushTotals();   // approve on the latest totals
     try { await setRunStatus(run.id, next); await loadRun(month); }
     catch (e) { console.error(e); setError("Could not update the payroll status."); }
     finally { setBusy(""); }
@@ -502,7 +529,7 @@ export default function RunPayroll() {
             <p className="mt-1 text-sm text-gray-500">Calculate, approve and lock monthly payroll</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
+            <input type="month" value={month || ""} onChange={(e) => e.target.value && setMonth(e.target.value)}
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200" />
             <CustomSelect sizing="sm" value={staffType} onChange={(e) => setStaffType(e.target.value)}>
               <option value="all">All Staff</option>
@@ -514,10 +541,6 @@ export default function RunPayroll() {
               <option value="Main">Main School</option>
               <option value="Battaramulla">Battaramulla</option>
             </CustomSelect>
-            <div className="w-60">
-              <CustomInput sizing="sm" icon={HiSearch} value={query} onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search EPF number or name…" />
-            </div>
             <StatusBadge color={statusColor[status]} className="px-3 py-1.5 text-sm font-semibold">{status}</StatusBadge>
           </div>
         </div>
@@ -692,8 +715,19 @@ export default function RunPayroll() {
           </div>
         )}
 
-        {/* Table */}
+        {/* Table - the search sits right on top of it, where the eye already is */}
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-5 py-3 dark:border-gray-700">
+            <div className="w-72">
+              <CustomInput icon={HiSearch} value={query} onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search EPF number or name…" />
+            </div>
+            {query && (
+              <span className="text-xs text-gray-400">
+                {filtered.length} of {rows.length} employee{rows.length === 1 ? "" : "s"}
+              </span>
+            )}
+          </div>
           <div className="overflow-x-auto">
             <CustomTable hoverable className="text-sm">
               <CustomTableHead>

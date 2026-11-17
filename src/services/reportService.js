@@ -1,5 +1,5 @@
 import { execSQL, esc } from './api';
-import { loanStanding, loanMonths } from './loanService';
+import { loanStanding, loanMonths, monthlyInterestOf } from './loanService';
 
 /* ------------------------------------------------------------------
  * Aggregate queries behind the Dashboard and Reports pages.
@@ -170,7 +170,7 @@ export const fetchLoanReport = async (r) => {
   `);
   const list = (Array.isArray(rows) ? rows : []).map((l) => {
     const st = loanStanding(l, r.to);
-    return { ...l, months: loanMonths(l), recovered: st.recovered, remaining: st.outstanding, status: st.state };
+    return { ...l, months: loanMonths(l), monthlyInterest: monthlyInterestOf(l), recovered: st.recovered, remaining: st.outstanding, status: st.state };
   }).sort((a, b) =>
     String(a.loanType || '').localeCompare(String(b.loanType || '')) ||
     (STATE_ORDER[a.status] - STATE_ORDER[b.status]) ||
@@ -181,15 +181,16 @@ export const fetchLoanReport = async (r) => {
     if (!group) return;
     out.push({ _subtotal: true, emp_id: '', empName: `${group.type} — ${group.n} loan${group.n === 1 ? '' : 's'}, ${group.active} still recovering`,
                loanType: '', principal: group.principal, monthlyInstallment: group.monthly,
-               recovered: group.recovered, remaining: group.remaining, status: '' });
+               monthlyInterest: group.interest, recovered: group.recovered, remaining: group.remaining, status: '' });
   };
   list.forEach((l) => {
     const type = l.loanType || 'Other';
-    if (!group || group.type !== type) { close(); group = { type, n: 0, active: 0, principal: 0, monthly: 0, recovered: 0, remaining: 0 }; }
+    if (!group || group.type !== type) { close(); group = { type, n: 0, active: 0, principal: 0, monthly: 0, interest: 0, recovered: 0, remaining: 0 }; }
     group.n += 1;
     if (l.status === 'Active' || l.status === 'Upcoming') group.active += 1;
     group.principal += Number(l.principal) || 0;
     group.monthly   += Number(l.monthlyInstallment) || 0;
+    group.interest  += Number(l.monthlyInterest) || 0;
     group.recovered += Number(l.recovered) || 0;
     group.remaining += Number(l.remaining) || 0;
     out.push(l);
@@ -439,15 +440,38 @@ const shortMonthName = (ym) => {
   return new Date(y, m - 1, 1).toLocaleString('en-GB', { month: 'short', year: 'numeric' });
 };
 
-const comparisonReason = (c, p, month, prev) => {
-  if (!p) return `New — not in the ${shortMonthName(prev)} payroll`;
-  if (!c) return `Not in the ${shortMonthName(month)} payroll`;
+const longDate = (v) => {
+  const [y, m, d] = String(v).slice(0, 10).split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+/* What the employee master says about the person, when it explains the month:
+ * left (resigned) by the end of it, joined during it, or joined part-way through
+ * the month before (a full first month explains nothing). */
+const employeeStatus = (e, month, prev) => {
+  if (e?.resigned && e.resigned.slice(0, 10) <= `${month}-31`) return `Resigned ${longDate(e.resigned)}`;
+  const j = e?.joined ? e.joined.slice(0, 10) : '';
+  if (j && (j.slice(0, 7) === month || (j.slice(0, 7) === prev && j.slice(8, 10) !== '01'))) return `Joined ${longDate(j)}`;
+  return '';
+};
+
+const comparisonReason = (c, p, month, prev, e) => {
+  const status = employeeStatus(e, month, prev);
+  const lead = (text) => [status, text].filter(Boolean).join(' · ');
+  if (!p) return lead(`New — not in the ${shortMonthName(prev)} payroll`);
+  if (!c) return lead(`Not in the ${shortMonthName(month)} payroll`);
   const parts = [];
   let explained = 0;
   const add = (label, d) => { if (Math.round(d) !== 0) { parts.push(`${label} ${signed(d)}`); explained += d; } };
-  add('Basic', c.basicSalary - p.basicSalary);
+  /* An increment is paid on its own line in its first month and is part of basic
+   * from the next, so October read "Basic +23,000 · Increment −23,000" for some
+   * 40 people whose pay had not moved at all. The two are netted off and named. */
+  const incDrop = p.increment - c.increment, basicRise = c.basicSalary - p.basicSalary;
+  const merged = incDrop > 0 && basicRise > 0 ? Math.min(incDrop, basicRise) : 0;
+  if (Math.round(merged) !== 0) parts.push(`Increment of ${Math.round(merged).toLocaleString()} now in basic`);
+  add('Basic', basicRise - merged);
   add('Budgetary', c.budgetaryAllowance - p.budgetaryAllowance);
-  add('Increment', c.increment - p.increment);
+  add('Increment', (c.increment - p.increment) + merged);
   add('Salary adj.', c.salaryAdjustment - p.salaryAdjustment);
   add('Class teacher', c.formTeacher - p.formTeacher);
   const names = {};
@@ -463,7 +487,7 @@ const comparisonReason = (c, p, month, prev) => {
   }
   const rest = (c.grossPay - p.grossPay) - explained;
   if (Math.abs(rest) >= 1) parts.push(`Other ${signed(rest)}`);
-  return parts.join(' · ');
+  return lead(parts.join(' · '));
 };
 
 export const fetchMonthComparison = async (month) => {
@@ -472,6 +496,8 @@ export const fetchMonthComparison = async (month) => {
   const prev = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
   const rows = await execSQL(`
     SELECT d.emp_id, rr.runMonth, ${NAME_SQL('e')} AS empName, d.empName AS savedName,
+           CONVERT(varchar(10), e.dateOfResignation, 120) AS resigned,
+           CONVERT(varchar(10), e.dateOfJoining, 120) AS joined,
            ISNULL(d.basicSalary,0) AS basicSalary, ISNULL(d.budgetaryAllowance,0) AS budgetaryAllowance,
            ISNULL(d.increment,0) AS increment, ISNULL(d.salaryAdjustment,0) AS salaryAdjustment,
            ISNULL(d.formTeacherAllowance,0) - ISNULL(d.formTeacherDeduction,0) AS formTeacher,
@@ -485,16 +511,16 @@ export const fetchMonthComparison = async (month) => {
   const byEmp = new Map();
   (Array.isArray(rows) ? rows : []).forEach((d) => {
     const k = String(d.emp_id);
-    if (!byEmp.has(k)) byEmp.set(k, { emp_id: d.emp_id, empName: d.empName || d.savedName });
+    if (!byEmp.has(k)) byEmp.set(k, { emp_id: d.emp_id, empName: d.empName || d.savedName, emp: { resigned: d.resigned, joined: d.joined } });
     byEmp.get(k)[d.runMonth === month ? 'c' : 'p'] = d;
   });
   return [...byEmp.values()]
-    .map(({ emp_id, empName, c, p }) => ({
+    .map(({ emp_id, empName, emp, c, p }) => ({
       emp_id, empName,
       prevGross: p ? Number(p.grossPay) : 0,
       currGross: c ? Number(c.grossPay) : 0,
       difference: (c ? Number(c.grossPay) : 0) - (p ? Number(p.grossPay) : 0),
-      reason: comparisonReason(c, p, month, prev),
+      reason: comparisonReason(c, p, month, prev, emp),
     }))
     .filter((x) => Math.round(x.difference) !== 0)
     .sort((a, b) => Number(a.emp_id) - Number(b.emp_id));

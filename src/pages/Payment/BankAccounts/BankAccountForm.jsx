@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomButton, CustomToggle } from "../../../components/FormFields";
-import { fetchActiveEmployees } from "../../../services/employeeService";
+import { fetchEmployeeChoices } from "../../../services/employeeService";
 
 export default function BankAccountForm({ closeForm, initialData, onSave }) {
   const [employees, setEmployees] = useState([]);
@@ -19,7 +19,7 @@ export default function BankAccountForm({ closeForm, initialData, onSave }) {
   const [isDefault, setIsDefault] = useState(initialData?.isDefault ?? false);
 
   useEffect(() => {
-    fetchActiveEmployees().then((d) => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
+    fetchEmployeeChoices().then((d) => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
   }, []);
 
   const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));

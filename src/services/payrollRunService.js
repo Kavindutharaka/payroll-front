@@ -353,6 +353,18 @@ export const replaceRunDetails = async (runId, runMonth, rows) => {
   if (saved !== rows.length) throw new Error(`Saved ${saved} of ${rows.length} rows`);
 };
 
+/* The payroll month being worked on: the one after the latest month marked Paid.
+ * October's payroll is still being finished in November, so "this month" by the
+ * calendar showed November's (empty) salary advances instead of October's. */
+export const fetchOpenPayrollMonth = async () => {
+  const r = await execSQL(`SELECT MAX(runMonth) AS m FROM dbo.payroll_run WHERE status = 'Paid'`);
+  const m = r?.[0]?.m;
+  if (!m) return null;
+  const [y, mm] = String(m).split('-').map(Number);
+  const next = new Date(y, mm, 1);   // month index mm is the month after
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+};
+
 /* How many people a payroll for this period should hold: the same people a
  * calculation picks up - current staff employed at some point in the period. */
 export const countExpectedForPeriod = async (periodFrom, periodTo) => {

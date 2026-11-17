@@ -31,6 +31,24 @@ export const fetchActiveEmployees = () =>
     `AND (dateOfResignation IS NULL OR dateOfResignation > GETDATE()) ORDER BY emp_id ASC`
   );
 
+/* For the employee pickers on the loan, leave, bank-account and standing-order
+ * forms: just the number and the name parts. Those forms used to pull every
+ * column of every employee - 267 KB, about five seconds on a slow day - each time
+ * one was opened, which is what made Grant / Edit Loan seem to freeze. Kept for a
+ * few minutes so opening the next form is instant. */
+let choices = null;
+export const fetchEmployeeChoices = () => {
+  if (choices && Date.now() - choices.at < 5 * 60 * 1000) return choices.list;
+  const list = execSQL(
+    `SELECT emp_id, initial, initials, firstName, surName FROM ${TABLE} WHERE status = 'Active' ` +
+    `AND (dateOfResignation IS NULL OR dateOfResignation > GETDATE()) ORDER BY emp_id ASC`
+  ).catch((e) => { choices = null; throw e; });
+  choices = { at: Date.now(), list };
+  return list;
+};
+// a save may add someone or change a name, so the next picker reads afresh
+export const forgetEmployeeChoices = () => { choices = null; };
+
 export const createEmployee = (e) =>
   execSQL(
     `EXEC ${SP} @action='INSERT',` +

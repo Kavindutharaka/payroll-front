@@ -18,6 +18,7 @@ import {
   HiBriefcase,
   HiCurrencyDollar,
   HiChartBar,
+  HiFolderOpen,
   HiRefresh,
   HiPlay,
   HiChevronDown,
@@ -99,6 +100,7 @@ const navGroups = [
         ],
       },
       { href: "/reports", label: "Reports", icon: HiChartBar },
+      { href: "/documents", label: "Payroll Files", icon: HiFolderOpen },
     ],
   },
 ];

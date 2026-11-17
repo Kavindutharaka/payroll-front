@@ -8,7 +8,8 @@ import { fetchActiveEmployees } from "../../../services/employeeService";
 import { fetchAllStructures } from "../../../services/salaryStructureService";
 import {
   fetchBonuses, regenerateBonusSheet, updateBonus, finaliseBonuses,
-  fetchBonusTaxInputs, saveBonusPaye, fetchBonusLeave, saveBonusLeave, fetchBonusLate, saveBonusLate,
+  fetchBonusTaxInputs, saveBonusPaye, saveBonusPayeManual, fetchBonusLeave, saveBonusLeave, fetchBonusLate, saveBonusLate,
+  fetchCurrentBasics,
 } from "../../../services/incrementBonusService";
 import {
   bonusPaye, assessmentYear, leaveDeduction, bonusLeaveCycle, lateDeduction, bonusLateCycle, LATE_RULE_FROM,
@@ -38,15 +39,18 @@ export default function BonusSheet() {
   const [savingId, setSaving] = useState(null);
   const [taxIn, setTaxIn]     = useState({});   // per row id: what Tax Table 02 needs
   const [slabs, setSlabs]     = useState([]);
+  const [basics, setBasics]   = useState({});   // emp_id -> basic salary now
 
   const finalised = rows.length > 0 && rows.every((r) => r.status === "Finalised");
 
   const load = useCallback(async (m) => {
     setLoading(true); setError("");
     try {
-      const [d, inputs, s] = await Promise.all([
+      const [d, inputs, s, b] = await Promise.all([
         fetchBonuses(m), fetchBonusTaxInputs(m).catch(() => []), fetchTaxSlabs(DEFAULT_MODE).catch(() => []),
+        fetchCurrentBasics().catch(() => []),
       ]);
+      setBasics(Object.fromEntries((Array.isArray(b) ? b : []).map((x) => [String(x.emp_id), Number(x.basicSalary) || 0])));
       setRows((Array.isArray(d) ? d : []).map((r) => ({ ...r, empName: r.displayName || r.empName })));
       setTaxIn(Object.fromEntries((Array.isArray(inputs) ? inputs : []).map((x) => [x.id, x])));
       setSlabs(Array.isArray(s) ? s : []);
@@ -170,15 +174,40 @@ export default function BonusSheet() {
       joined:  x.joinedMonth || null,
     });
   };
-  // once finalised the stored figure is the record; before that it follows the amount
-  const payeOf = (r) => (r.status === "Finalised" && r.paye !== null && r.paye !== undefined
+  // once finalised the stored figure is the record; before that it follows the
+  // amount - unless a figure was typed in by hand, which then stands
+  const isManual = (r) => r.payeManual === true || r.payeManual === 1;
+  const payeOf = (r) => ((r.status === "Finalised" || isManual(r)) && r.paye !== null && r.paye !== undefined
     ? Number(r.paye) : taxFor(r).paye);
+
+  const editPaye = (id, value) =>
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, paye: value, payeManual: true } : r)));
+
+  const commitPaye = async (row) => {
+    if (row.status !== "Draft") return;
+    const paye = Math.max(0, Math.round(Number(row.paye) || 0));
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, paye, payeManual: true } : r)));
+    setSaving(row.id);
+    try { await saveBonusPayeManual(row.id, paye); }
+    catch (e) { console.error(e); setError("Could not save that PAYE figure."); }
+    finally { setSaving(null); }
+  };
+
+  // back to the formula
+  const autoPaye = async (row) => {
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, paye: null, payeManual: false } : r)));
+    setSaving(row.id);
+    try { await saveBonusPayeManual(row.id, null); }
+    catch (e) { console.error(e); setError("Could not switch that PAYE back to the formula."); }
+    finally { setSaving(null); }
+  };
 
   const handleFinalise = async () => {
     if (!window.confirm(`Finalise the bonus sheet for ${monthLabel(month)}? Amounts and PAYE can no longer be edited afterwards.`)) return;
     setBusy("Finalising…"); setError("");
     try {
-      await saveBonusPaye(rows.filter((r) => r.status === "Draft").map((r) => ({ id: r.id, paye: taxFor(r).paye })));
+      // typed figures are already stored and stay as they are
+      await saveBonusPaye(rows.filter((r) => r.status === "Draft" && !isManual(r)).map((r) => ({ id: r.id, paye: taxFor(r).paye })));
       await finaliseBonuses(month);
       await load(month);
     }
@@ -191,6 +220,10 @@ export default function BonusSheet() {
     return !q || (r.empName || "").toLowerCase().includes(q) || String(r.emp_id).includes(q);
   });
   const totalBonus = filtered.reduce((a, r) => a + (Number(r.bonusAmount) || 0), 0);
+  // one month's salary less the bonus - what leave and lateness took off
+  const deductionOf = (r) => Math.max(0, Number(r.basicSalary || 0) + Number(r.budgetaryAllowance || 0) - (Number(r.bonusAmount) || 0));
+  const outdated = rows.filter((r) => r.status === "Draft" && basics[String(r.emp_id)] !== undefined
+    && Math.round(basics[String(r.emp_id)]) !== Math.round(Number(r.basicSalary) || 0));
   const totalPaye  = filtered.reduce((a, r) => a + payeOf(r), 0);
   const ya = assessmentYear(month);
   const estimated = rows.some((r) => r.status === "Draft" && taxFor(r).estimatedMonths > 0);
@@ -219,6 +252,18 @@ export default function BonusSheet() {
           </div>
         )}
 
+        {outdated.length > 0 && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+            <HiExclamation className="mt-0.5 h-5 w-5 flex-shrink-0" />
+            <span>
+              <span className="font-semibold">{outdated.length}</span> employee{outdated.length === 1 ? "'s" : "s'"} basic
+              salary has changed since this sheet was generated (e.g. {outdated[0].emp_id}: {money(outdated[0].basicSalary)} here,
+              {" "}{money(basics[String(outdated[0].emp_id)])} now). Click <span className="font-semibold">Regenerate Sheet</span> before
+              finalising — leave days, late days and any PAYE typed in will need entering again.
+            </span>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-3">
           <CustomButton color="purple" disabled={!!busy || finalised} onClick={handleGenerate}>
             <HiRefresh className="mr-2 h-4 w-4" /> {rows.length ? "Regenerate Sheet" : "Generate Sheet"}
@@ -230,12 +275,12 @@ export default function BonusSheet() {
           )}
           <CustomButton color="gray" outline disabled={rows.length === 0}
             onClick={() => downloadCSV(`bonus-${month}.csv`,
-              rows.map((r) => ({ ...r, payeCalc: payeOf(r), netBonus: (Number(r.bonusAmount) || 0) - payeOf(r) })), [
+              rows.map((r) => ({ ...r, deduction: deductionOf(r), payeCalc: payeOf(r), payeHow: isManual(r) ? "Typed" : "Formula", netBonus: (Number(r.bonusAmount) || 0) - payeOf(r) })), [
               { key: "emp_id", label: "Emp ID" }, { key: "empName", label: "Employee" },
               { key: "category", label: "Category" }, { key: "basicSalary", label: "Basic" },
               { key: "budgetaryAllowance", label: "Budgetary" }, { key: "leaveDays", label: "Leave Days" },
-              { key: "lateDays", label: "Late Days" }, { key: "bonusAmount", label: "Bonus" },
-              { key: "payeCalc", label: "PAYE (Table 02)" }, { key: "netBonus", label: "Net Bonus" },
+              { key: "lateDays", label: "Late Days" }, { key: "deduction", label: "Deduction" }, { key: "bonusAmount", label: "Bonus" },
+              { key: "payeCalc", label: "PAYE (Table 02)" }, { key: "payeHow", label: "PAYE entry" }, { key: "netBonus", label: "Net Bonus" },
             ])}>
             <HiDownload className="mr-2 h-4 w-4" /> Export CSV
           </CustomButton>
@@ -257,17 +302,18 @@ export default function BonusSheet() {
                   <CustomTableHeadCell>Leave Ded.</CustomTableHeadCell>
                   <CustomTableHeadCell className="text-amber-600">Late Days ✎</CustomTableHeadCell>
                   <CustomTableHeadCell>Late Ded.</CustomTableHeadCell>
+                  <CustomTableHeadCell>Deduction</CustomTableHeadCell>
                   <CustomTableHeadCell className="text-amber-600">Bonus Amount ✎</CustomTableHeadCell>
-                  <CustomTableHeadCell className="text-red-600">PAYE (Table 02)</CustomTableHeadCell>
+                  <CustomTableHeadCell className="text-red-600" title="Worked out by Tax Table 02 - click ✎ to type a figure for someone whose monthly pay varies">PAYE (Table 02) ✎</CustomTableHeadCell>
                   <CustomTableHeadCell className="text-green-600">Net Bonus</CustomTableHeadCell>
                   <CustomTableHeadCell>Status</CustomTableHeadCell>
                 </CustomTableRow>
               </CustomTableHead>
               <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {loading ? (
-                  <CustomTableRow><CustomTableCell colSpan={12} className="py-10 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
+                  <CustomTableRow><CustomTableCell colSpan={13} className="py-10 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
                 ) : filtered.length === 0 ? (
-                  <CustomTableRow><CustomTableCell colSpan={12} className="py-10 text-center text-sm text-gray-400">
+                  <CustomTableRow><CustomTableCell colSpan={13} className="py-10 text-center text-sm text-gray-400">
                     No bonus sheet for {monthLabel(month)} yet — click <span className="font-semibold">Generate Sheet</span>.
                   </CustomTableCell></CustomTableRow>
                 ) : filtered.map((r) => (
@@ -319,6 +365,9 @@ export default function BonusSheet() {
                         </CustomTableCell>
                       );
                     })()}
+                    <CustomTableCell className="whitespace-nowrap text-sm text-red-600">
+                      {deductionOf(r) ? `− ${money(deductionOf(r))}` : "—"}
+                    </CustomTableCell>
                     <CustomTableCell>
                       {r.status === "Draft" ? (
                         <input type="number" step="0.01" min="0" disabled={savingId === r.id}
@@ -339,8 +388,31 @@ export default function BonusSheet() {
                           title={`Y/A ${ya.start} to ${ya.end}: A ${money(t.A)} + B ${money(t.B)} + C ${money(t.C)} = D ${money(t.D)}` +
                             ` · rate ${t.rate}% · monthly tax A ${money(t.taxA)}, B ${money(t.taxB)}` +
                             (t.estimatedMonths ? ` · ${t.estimatedMonths} month(s) estimated from the latest payroll` : "")}>
-                          {money(paye)}
-                          {r.status === "Draft" && t.estimatedMonths > 0 && <span className="ml-1 text-[10px] text-gray-400">est.</span>}
+                          {r.status === "Draft" && isManual(r) ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <input type="number" step="1" min="0" disabled={savingId === r.id}
+                                value={r.paye ?? 0}
+                                onChange={(e) => editPaye(r.id, e.target.value)}
+                                onBlur={() => commitPaye(r)}
+                                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                                className="w-24 rounded border border-amber-400 bg-amber-100 px-2 py-1 text-sm font-semibold text-gray-800 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                              <span className="rounded bg-amber-200 px-1.5 text-[10px] font-semibold uppercase text-amber-900">manual</span>
+                              <button type="button" disabled={savingId === r.id} onClick={() => autoPaye(r)}
+                                title={`Back to the formula: ${money(t.paye)}`}
+                                className="text-xs text-purple-600 underline hover:text-purple-800 disabled:opacity-50">Auto</button>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1">
+                              {money(paye)}
+                              {r.status === "Draft" && t.estimatedMonths > 0 && <span className="text-[10px] text-gray-400">est.</span>}
+                              {r.status === "Finalised" && isManual(r) && <span className="text-[10px] text-amber-700">manual</span>}
+                              {r.status === "Draft" && (
+                                <button type="button" disabled={savingId === r.id} title="Type a PAYE figure for this person"
+                                  onClick={() => commitPaye({ ...r, paye: t.paye })}
+                                  className="ml-1 text-gray-400 hover:text-purple-600 disabled:opacity-50">✎</button>
+                              )}
+                            </span>
+                          )}
                         </CustomTableCell>
                         <CustomTableCell className="whitespace-nowrap text-sm font-bold text-green-700">
                           {money((Number(r.bonusAmount) || 0) - paye)}

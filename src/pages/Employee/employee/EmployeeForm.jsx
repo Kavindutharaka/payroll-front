@@ -25,7 +25,7 @@ const ageFrom = (dob) => {
   return age >= 0 && age < 120 ? String(age) : "";
 };
 
-export default function EmployeeForm({ closeForm, initialData, onSave }) {
+export default function EmployeeForm({ closeForm, initialData, onSave, saving = false, saveError = "" }) {
   const isEdit = !!initialData;
 
   const [form, setForm] = useState({
@@ -77,8 +77,25 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
 
   const set = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
 
+  /* A required field left empty far down the form stopped the save with only the
+   * browser's small bubble, often off screen - so the button seemed to do nothing.
+   * Each empty required field is named here instead, and the first one is shown. */
+  const [missing, setMissing] = useState([]);
+  const noteInvalid = (e) => {
+    const el = e.target;
+    const label = el.id ? document.querySelector(`label[for="${el.id}"]`)?.textContent : "";
+    const name = (label || el.placeholder || el.id || "a field").trim();
+    setMissing((m) => (m.includes(name) ? m : [...m, name]));
+    if (!e.currentTarget.dataset.shown) {
+      e.currentTarget.dataset.shown = "1";
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  };
+  const tryingToSave = (e) => { setMissing([]); if (e.currentTarget.form) delete e.currentTarget.form.dataset.shown; };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (saving) return;
     onSave({ ...form, epfEtf });
   };
 
@@ -99,7 +116,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
           </button>
         </div>
 
-        <form className="flex flex-col gap-6 px-6 py-6" onSubmit={handleSubmit}>
+        <form className="flex flex-col gap-6 px-6 py-6" onSubmit={handleSubmit} onInvalidCapture={noteInvalid}>
 
           {/* Personal Information */}
           <section>
@@ -417,9 +434,21 @@ export default function EmployeeForm({ closeForm, initialData, onSave }) {
             </div>
           </section>
 
+          {missing.length > 0 && (
+            <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-700 dark:bg-red-900/20 dark:text-red-300">
+              <span className="font-semibold">Not saved — please fill in:</span> {missing.join(", ")}.
+            </div>
+          )}
+          {saveError && (
+            <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-700 dark:bg-red-900/20 dark:text-red-300">
+              {saveError}
+            </div>
+          )}
           <div className="flex justify-end gap-3 border-t border-gray-100 pt-4 dark:border-gray-700">
             <CustomButton color="gray" type="button" onClick={closeForm}>Cancel</CustomButton>
-            <CustomButton color="purple" type="submit">{isEdit ? "Update Employee" : "Save Employee"}</CustomButton>
+            <CustomButton color="purple" type="submit" disabled={saving} onClick={tryingToSave}>
+              {saving ? "Saving…" : isEdit ? "Update Employee" : "Save Employee"}
+            </CustomButton>
           </div>
         </form>
       </div>

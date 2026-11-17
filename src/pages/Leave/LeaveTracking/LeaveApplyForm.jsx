@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import { CustomLabel, CustomInput, CustomSelect, CustomTextarea, CustomButton } from "../../../components/FormFields";
-import { fetchActiveEmployees } from "../../../services/employeeService";
+import { fetchEmployeeChoices } from "../../../services/employeeService";
 import { fetchLeaveTypes } from "../../../services/leaveTypeService";
 
 export default function LeaveApplyForm({ closeForm, onSave }) {
@@ -10,7 +10,7 @@ export default function LeaveApplyForm({ closeForm, onSave }) {
   const [form, setForm] = useState({ emp_id: "", leaveType: "", dateFrom: "", dateTo: "", reason: "" });
 
   useEffect(() => {
-    fetchActiveEmployees().then((d)  => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
+    fetchEmployeeChoices().then((d)  => setEmployees(Array.isArray(d) ? d : [])).catch(console.error);
     fetchLeaveTypes().then((d) => setLeaveTypes(Array.isArray(d) ? d : [])).catch(console.error);
   }, []);
 

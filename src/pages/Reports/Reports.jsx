@@ -86,6 +86,7 @@ const REPORTS = [
     range: "sum",
     load: (r) => fetchPayrollDetailReport(r),
     print: LEGAL,
+    printFont: 9,   // 295 mm wide on legal - still 30 mm from each paper edge
     excel: true,   // the auditors' soft copy - one sheet per month
     // Every deduction gets its own column. Showing only the total meant an
     // Insurance or Festival Advance line could not be checked against anything.
@@ -126,6 +127,8 @@ const REPORTS = [
     range: "sum",
     load: (r) => fetchPayrollPrintSheet(r),
     print: LEGAL,
+    // 18 columns leave room on legal, so larger type and narrow margins (5 Nov)
+    printFont: 12, printMargin: "5mm",
     excel: true,
     columns: [
       { key: "emp_id", label: "Emp ID" },
@@ -217,6 +220,7 @@ const REPORTS = [
       { key: "months", label: "Month(s)" },
       { key: "principal", label: "Principal", money: true },
       { key: "monthlyInstallment", label: "Monthly", money: true },
+      { key: "monthlyInterest", label: "Monthly Interest", money: true },
       { key: "recovered", label: "Recovered", money: true },
       { key: "remaining", label: "Outstanding", money: true, strong: true },
       { key: "status", label: "Status", badge: true },
@@ -336,7 +340,7 @@ const REPORTS = [
       { key: "difference", label: "Difference", money: true,
         tone: (r) => (r._subtotal ? "" : r.difference < 0 ? "font-bold text-red-600" : "font-bold text-green-600") },
       { key: "reason", label: "Reason for the difference", wrap: true,
-        tone: (r) => (/^(New|Not in)/.test(r.reason || "") ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900") },
+        tone: (r) => (/(New —|Not in the|Resigned)/.test(r.reason || "") ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900") },
     ],
   },
   {
@@ -678,6 +682,88 @@ export default function Reports() {
     rows.reduce((a, r) => (r._subtotal ? a : a + Number(r[col] || 0)), 0);
   const recordCount = rows.filter((r) => !r._subtotal).length;
   const paper = report?.print || PRINT_PAGE;
+  const printPx = report?.printFont ?? (columns.length > 20 ? 8.5 : 9);
+  const printMargin = report?.printMargin || "8mm";
+
+  /* A PDF of the report, laid out like the printout - same paper, columns, totals.
+   * For the soft copies that used to go through Print, Save as PDF. */
+  /* The same split for a PDF heading, as a line break the PDF table understands */
+  const pdfLabel = (label) => {
+    const words = String(label).split(" ");
+    if (words.length < 2 || words.length > 3 || label.length <= 7) return label;
+    const cut = words.length === 3 ? (words[0].length + words[1].length <= words[2].length + 3 ? 2 : 1) : 1;
+    return `${words.slice(0, cut).join(" ")}\n${words.slice(cut).join(" ")}`;
+  };
+
+  /* A PDF of the report, on the report's own paper, with totals and page numbers.
+   * The table is as wide as its columns and centred, with at least PDF_SAFE mm left
+   * clear down each side: the first PDFs ran edge to edge, and Nadee's printer cut
+   * off the Emp ID and Attend. Allow. columns (printout of 5 Nov). Within that, the
+   * type is as large as will fit, so a sheet with fewer columns prints bigger. */
+  const PDF_SAFE = 15;
+  const handlePdf = async () => {
+    if (!report || rows.length === 0) return;
+    // fetched only when asked for - it would add 140 KB to every page load otherwise
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
+    const [size, orientation] = paper.split(" ");
+    const newDoc = () => new jsPDF({ orientation, unit: "mm", format: size.toLowerCase(), compress: true });
+    const doc = newDoc();
+    const pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight();
+    const vMargin = 8;
+    const meta = `${report.range ? `${rangeLabel} · ` : ""}Asian International School · printed ${new Date().toLocaleDateString("en-GB")}` +
+      (columns.some((c) => c.money) ? " · amounts in Rs." : "");
+    const asText = (v) => (v === null || v === undefined ? "" : typeof v === "object" ? "" : String(v));
+    const head = [columns.map((c) => pdfLabel(c.label))];
+    const body = rows.map((r) => columns.map((c) => asText(cellText(r, c))));
+    const subRows = new Set(rows.map((r, i) => (r._subtotal ? i : -1)).filter((i) => i >= 0));
+    if (columns.some((c) => c.money)) {
+      body.push(columns.map((c, i) => (i === 0 ? "TOTAL" : c.money ? money(totalsFor(c.key)) : "")));
+    }
+    const right = Object.fromEntries(columns.map((c, i) => [i, { halign: c.money || c.num ? "right" : "left" }]));
+    const options = (fontSize) => ({
+      styles: { fontSize, cellPadding: { top: 0.6, bottom: 0.6, left: 0.8, right: 0.8 }, lineWidth: 0.1, lineColor: 150, textColor: 0, overflow: "linebreak" },
+      headStyles: { fillColor: [238, 238, 238], textColor: 0, fontStyle: "bold", valign: "bottom" },
+      columnStyles: right,
+    });
+
+    // measure on a scratch page with the widest entry of each column (and the
+    // headings and totals) - laying out every row at every size would be slow
+    const sample = [body[body.length - 1], ...columns.map((_, i) =>
+      body.reduce((best, r) => (String(r[i]).length > String(best[i]).length ? r : best), body[0]))];
+    const widthAt = (fontSize) => {
+      const scratch = newDoc();
+      autoTable(scratch, { head, body: sample, tableWidth: "wrap", margin: 0, ...options(fontSize) });
+      return scratch.lastAutoTable.columns.reduce((a, c) => a + c.width, 0);
+    };
+    const room = pageW - 2 * PDF_SAFE;
+    let fontSize = 5.5;
+    for (let f = 11; f >= 5.5; f -= 0.25) { if (widthAt(f) <= room) { fontSize = f; break; } }
+    const tableW = Math.min(widthAt(fontSize), room);
+    const left = Math.max(PDF_SAFE, (pageW - tableW) / 2);
+
+    doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.text(report.name, left, vMargin + 4);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.text(meta, left, vMargin + 9);
+    autoTable(doc, {
+      head, body,
+      startY: vMargin + 12,
+      margin: { left, right: pageW - left - tableW, top: vMargin, bottom: vMargin },
+      tableWidth: tableW,
+      ...options(fontSize),
+      showHead: "everyPage",
+      didParseCell: (d) => {
+        if (d.section !== "body") return;
+        if (d.row.index === rows.length) { d.cell.styles.fontStyle = "bold"; d.cell.styles.fillColor = [232, 232, 232]; }
+        else if (subRows.has(d.row.index)) { d.cell.styles.fontStyle = "bold"; d.cell.styles.fillColor = [245, 245, 245]; }
+      },
+    });
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i += 1) {
+      doc.setPage(i); doc.setFontSize(7);
+      doc.text(`${recordCount} record${recordCount !== 1 ? "s" : ""} · page ${i} of ${pages}`, left + tableW, pageH - 4, { align: "right" });
+    }
+    const suffix = !report.range ? "" : spansMonths ? `-${range.fromMonth}_${range.toMonth}` : `-${range.fromMonth}`;
+    doc.save(`${report.id}${suffix}.pdf`);
+  };
 
   return (
     <Layout>
@@ -764,6 +850,9 @@ export default function Reports() {
                 )}
                 <CustomButton color="gray" outline size="sm" disabled={rows.length === 0} onClick={() => window.print()}>
                   <HiPrinter className="mr-2 h-4 w-4" /> Print
+                </CustomButton>
+                <CustomButton color="gray" outline size="sm" disabled={rows.length === 0} onClick={handlePdf}>
+                  <HiDocumentText className="mr-2 h-4 w-4" /> PDF
                 </CustomButton>
                 <CustomButton color="purple" size="sm" disabled={rows.length === 0} onClick={handleExport}>
                   <HiDownload className="mr-2 h-4 w-4" /> Export CSV
@@ -885,11 +974,11 @@ export default function Reports() {
         <style>{`
           .report-print-only { display: none; }
           @media print {
-            @page { size: ${paper}; margin: 8mm; }
+            @page { size: ${paper}; margin: ${printMargin}; }
             body * { visibility: hidden; }
             .report-print-only, .report-print-only * { visibility: visible; }
             .report-print-only { display: block; position: absolute; left: 0; top: 0; width: 100%;
-                                 color: #000; font-size: ${columns.length > 20 ? 8.5 : 9}px; }
+                                 color: #000; font-size: ${printPx}px; }
             .report-print-only .print-sheet { display: table; margin: 0 auto; }   /* as wide as the table, centred */
             .report-print-only h2 { font-size: 13px; font-weight: 700; margin: 0 0 2px; }
             .report-print-only .report-print-meta { font-size: 8px; color: #444; margin: 0 0 6px; }
