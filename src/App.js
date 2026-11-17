@@ -1,48 +1,41 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { ROUTE_PERMS, canOpen } from './auth/access';
 import FeedbackHost from './ui/FeedbackHost';
 import Login from './pages/Auth/Login';
 import ForcedPasswordChange from './pages/Auth/ChangePassword';
-import UsersRoles from './pages/Admin/UsersRoles';
+import Layout from './components/Layout';
 import NoAccess from './pages/Auth/NoAccess';
 
-// Employee
-import Employee from './pages/Employee/employee/Employee';
-import Level from './pages/Employee/level/Level';
-import Position from './pages/Employee/position/Position';
-import SalaryStructure from './pages/Employee/SalaryStructure/SalaryStructure';
-
-// Dashboard
-import Dashboard from './pages/Dashboard/Dashboard';
-
-// Payroll Config
-import SalaryComponents from './pages/PayrollConfig/SalaryComponents/SalaryComponents';
-import TaxConfig from './pages/PayrollConfig/TaxConfig/TaxConfig';
-import EPFETFConfig from './pages/PayrollConfig/EPFETFConfig/EPFETFConfig';
-import OTConfig from './pages/PayrollConfig/OTConfig/OTConfig';
-
-// Leave
-import LeaveTypes from './pages/Leave/LeaveTypes/LeaveTypes';
-import LeaveTracking from './pages/Leave/LeaveTracking/LeaveTracking';
-
-// Loan
-import LoanTypes from './pages/Loan/LoanTypes/LoanTypes';
-import EmployeeLoan from './pages/Loan/EmployeeLoan/EmployeeLoan';
-
-// Payment
-import BankAccounts from './pages/Payment/BankAccounts/BankAccounts';
-import StandingOrders from './pages/Payment/StandingOrders/StandingOrders';
-
-// Payroll Processing
-import RunPayroll from './pages/Payroll/RunPayroll/RunPayroll';
-import Payslip from './pages/Payroll/Payslip/Payslip';
-import IncrementSheet from './pages/Payroll/Increment/IncrementSheet';
-import BonusSheet from './pages/Payroll/Bonus/BonusSheet';
-
-// Reports
-import Reports from './pages/Reports/Reports';
-import Documents from './pages/Documents/Documents';
+/* Each screen is its own download, fetched the first time it's opened - the first
+ * load only carries the sign-in and the shell. Once signed in, the rest are fetched
+ * quietly in the background, so moving between screens is still instant. */
+const SCREENS = {
+  Dashboard:        () => import('./pages/Dashboard/Dashboard'),
+  Employee:         () => import('./pages/Employee/employee/Employee'),
+  SalaryStructure:  () => import('./pages/Employee/SalaryStructure/SalaryStructure'),
+  Position:         () => import('./pages/Employee/position/Position'),
+  Level:            () => import('./pages/Employee/level/Level'),
+  SalaryComponents: () => import('./pages/PayrollConfig/SalaryComponents/SalaryComponents'),
+  TaxConfig:        () => import('./pages/PayrollConfig/TaxConfig/TaxConfig'),
+  EPFETFConfig:     () => import('./pages/PayrollConfig/EPFETFConfig/EPFETFConfig'),
+  OTConfig:         () => import('./pages/PayrollConfig/OTConfig/OTConfig'),
+  LeaveTypes:       () => import('./pages/Leave/LeaveTypes/LeaveTypes'),
+  LeaveTracking:    () => import('./pages/Leave/LeaveTracking/LeaveTracking'),
+  LoanTypes:        () => import('./pages/Loan/LoanTypes/LoanTypes'),
+  EmployeeLoan:     () => import('./pages/Loan/EmployeeLoan/EmployeeLoan'),
+  BankAccounts:     () => import('./pages/Payment/BankAccounts/BankAccounts'),
+  StandingOrders:   () => import('./pages/Payment/StandingOrders/StandingOrders'),
+  RunPayroll:       () => import('./pages/Payroll/RunPayroll/RunPayroll'),
+  Payslip:          () => import('./pages/Payroll/Payslip/Payslip'),
+  IncrementSheet:   () => import('./pages/Payroll/Increment/IncrementSheet'),
+  BonusSheet:       () => import('./pages/Payroll/Bonus/BonusSheet'),
+  Reports:          () => import('./pages/Reports/Reports'),
+  Documents:        () => import('./pages/Documents/Documents'),
+  UsersRoles:       () => import('./pages/Admin/UsersRoles'),
+};
+const L = Object.fromEntries(Object.entries(SCREENS).map(([k, load]) => [k, lazy(load)]));
 
 /* A screen only opens for a role that includes its permission. */
 function Guard({ path, children }) {
@@ -63,29 +56,64 @@ function FirstAllowed() {
 }
 
 const ROUTES = [
-  ["/", <Dashboard />],
-  ["/emp/manage", <Employee />],
-  ["/emp/salary-structure", <SalaryStructure />],
-  ["/emp/pos", <Position />],
-  ["/emp/lvl", <Level />],
-  ["/config/components", <SalaryComponents />],
-  ["/config/tax", <TaxConfig />],
-  ["/config/epf-etf", <EPFETFConfig />],
-  ["/config/ot", <OTConfig />],
-  ["/leave/types", <LeaveTypes />],
-  ["/leave/tracking", <LeaveTracking />],
-  ["/loan/types", <LoanTypes />],
-  ["/loan/employee", <EmployeeLoan />],
-  ["/payment/banks", <BankAccounts />],
-  ["/payment/standing-orders", <StandingOrders />],
-  ["/payroll/run", <RunPayroll />],
-  ["/payroll/payslip", <Payslip />],
-  ["/payroll/increment", <IncrementSheet />],
-  ["/payroll/bonus", <BonusSheet />],
-  ["/reports", <Reports />],
-  ["/documents", <Documents />],
-  ["/admin/users", <UsersRoles />],
+  ["/", L.Dashboard, "Dashboard"],
+  ["/emp/manage", L.Employee, "Employees"],
+  ["/emp/salary-structure", L.SalaryStructure, "Salary Structure"],
+  ["/emp/pos", L.Position, "Positions"],
+  ["/emp/lvl", L.Level, "Levels"],
+  ["/config/components", L.SalaryComponents, "Salary Components"],
+  ["/config/tax", L.TaxConfig, "Tax Configuration"],
+  ["/config/epf-etf", L.EPFETFConfig, "EPF / ETF"],
+  ["/config/ot", L.OTConfig, "Overtime"],
+  ["/leave/types", L.LeaveTypes, "Leave Types"],
+  ["/leave/tracking", L.LeaveTracking, "Leave"],
+  ["/loan/types", L.LoanTypes, "Loan Types"],
+  ["/loan/employee", L.EmployeeLoan, "Loans & Advances"],
+  ["/payment/banks", L.BankAccounts, "Bank Accounts"],
+  ["/payment/standing-orders", L.StandingOrders, "Standing Orders"],
+  ["/payroll/run", L.RunPayroll, "Run Payroll"],
+  ["/payroll/payslip", L.Payslip, "Payslips"],
+  ["/payroll/increment", L.IncrementSheet, "Increment Sheet"],
+  ["/payroll/bonus", L.BonusSheet, "Bonus Sheet"],
+  ["/reports", L.Reports, "Reports"],
+  ["/documents", L.Documents, "Payroll Files"],
+  ["/admin/users", L.UsersRoles, "Users & Roles"],
 ];
+const TITLES = Object.fromEntries(ROUTES.map(([p, , t]) => [p, t]));
+
+/* A new screen opens at the top, and the browser tab says which screen it is. */
+function PageChrome() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const t = TITLES[pathname];
+    document.title = t ? `${t} · AIS Payroll` : "AIS Payroll";
+  }, [pathname]);
+  return null;
+}
+
+/* Fetch every screen's code once the browser is idle after sign-in. */
+function Prefetch() {
+  useEffect(() => {
+    const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1500));
+    const id = idle(() => Object.values(SCREENS).forEach((load) => load().catch(() => {})));
+    return () => (window.cancelIdleCallback || clearTimeout)(id);
+  }, []);
+  return null;
+}
+
+/* While a screen's code arrives: the sidebar stays, with a quiet placeholder. */
+function ScreenLoading() {
+  return (
+    <Layout>
+      <div className="flex flex-col gap-6" aria-busy="true">
+        <div className="skeleton h-8 w-56" />
+        <div className="skeleton h-4 w-80" />
+        <div className="skeleton h-64 w-full rounded-xl" />
+      </div>
+    </Layout>
+  );
+}
 
 function Splash() {
   return (
@@ -101,12 +129,18 @@ function Gate() {
   if (status !== "signedIn") return <Login />;
   if (user?.mustChangePassword) return <ForcedPasswordChange />;
   return (
-    <Routes>
-      {ROUTES.map(([path, element]) => (
-        <Route key={path} path={path} element={<Guard path={path}>{element}</Guard>} />
-      ))}
-      <Route path="*" element={<NoAccess missing />} />
-    </Routes>
+    <>
+      <PageChrome />
+      <Prefetch />
+      <Suspense fallback={<ScreenLoading />}>
+        <Routes>
+          {ROUTES.map(([path, Screen]) => (
+            <Route key={path} path={path} element={<Guard path={path}><Screen /></Guard>} />
+          ))}
+          <Route path="*" element={<NoAccess missing />} />
+        </Routes>
+      </Suspense>
+    </>
   );
 }
 

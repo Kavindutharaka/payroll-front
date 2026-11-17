@@ -115,11 +115,11 @@ export default function EmployeeLoanForm({ closeForm, onSave, loan = null, savin
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
+    <div className="fb-fade fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="fb-pop relative w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:max-h-[90vh] sm:rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-purple-600 px-6 py-4">
           <h3 className="text-lg font-semibold text-white">{editing ? "Edit Loan" : "Grant Loan"}</h3>
-          <button type="button" onClick={closeForm}
+          <button type="button" onClick={closeForm} data-modal-close aria-label="Close"
             className="rounded-lg p-1.5 text-purple-200 hover:bg-purple-500 hover:text-white">
             <HiX className="h-5 w-5" />
           </button>
@@ -142,7 +142,7 @@ export default function EmployeeLoanForm({ closeForm, onSave, loan = null, savin
               {loanTypes.map((lt) => <option key={lt.id} value={lt.id}>{lt.name}</option>)}
             </CustomSelect>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="principal">Principal Amount (Rs.)</CustomLabel>
               <CustomInput id="principal" type="number" value={form.principal}
@@ -173,7 +173,7 @@ export default function EmployeeLoanForm({ closeForm, onSave, loan = null, savin
           </div>
 
           {editing && (
-            <div className="grid grid-cols-2 gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
               <p className="col-span-2 text-xs text-amber-800 dark:text-amber-200">
                 Adjust these when someone resigns and the balance has to come off their final
                 salary. Leave them alone and they follow the principal.
@@ -194,7 +194,7 @@ export default function EmployeeLoanForm({ closeForm, onSave, loan = null, savin
           {form.principal > 0 && (
             <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-700 dark:bg-purple-900/20">
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-purple-500">Loan Summary</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <span className="text-gray-500">Interest Rate:</span>   <span className="font-semibold">{interest}%</span>
                 <span className="text-gray-500">Total Payable:</span>   <span className="font-semibold text-purple-700">Rs. {totalPayable.toLocaleString()}</span>
                 <span className="text-gray-500">Monthly Installment:</span> <span className="font-semibold text-green-700">Rs. {monthly.toLocaleString()}</span>

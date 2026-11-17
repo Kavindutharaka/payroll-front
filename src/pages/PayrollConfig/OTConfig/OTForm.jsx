@@ -14,13 +14,13 @@ export default function OTForm({ closeForm, initialData, onSave }) {
   const handleSubmit = (e) => { e.preventDefault(); onSave(form); };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
+    <div className="fb-fade fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="fb-pop relative w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:max-h-[90vh] sm:rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
         <div className="flex items-center justify-between rounded-t-2xl bg-purple-600 px-6 py-4">
           <h3 className="text-lg font-semibold text-white">
             {initialData ? "Edit OT Type" : "Create OT Type"}
           </h3>
-          <button type="button" onClick={closeForm}
+          <button type="button" onClick={closeForm} data-modal-close aria-label="Close"
             className="rounded-lg p-1.5 text-purple-200 hover:bg-purple-500 hover:text-white">
             <HiX className="h-5 w-5" />
           </button>
@@ -30,7 +30,7 @@ export default function OTForm({ closeForm, initialData, onSave }) {
             <CustomLabel htmlFor="otName">OT Type Name</CustomLabel>
             <CustomInput id="otName" value={form.name} onChange={set("name")} placeholder="e.g. Double OT" required />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="multiplier">Multiplier</CustomLabel>
               <CustomInput id="multiplier" type="number" step="0.5" min="1"

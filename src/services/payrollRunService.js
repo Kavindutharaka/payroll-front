@@ -190,8 +190,17 @@ export const computePayroll = (input, slabs, rates = {}) => {
 /* ---------------- data access ---------------- */
 
 // Opens (or creates) the run for a month and returns its header row.
-export const openRun = (runMonth) =>
-  execSQL(`EXEC ${RUN_SP} @action='OPEN',@runMonth=${esc(runMonth)}`);
+/* The month's run, creating its Draft header the first time the month is opened.
+ * Looks first: OPEN counts as a change, and every change empties the read cache. */
+export const openRun = async (runMonth) => {
+  const have = await execSQL(
+    `SELECT TOP 1 * FROM dbo.payroll_run WHERE runMonth=${esc(runMonth)} ` +
+    `AND status<>'Deleted' ORDER BY id DESC`
+  );
+  const r = Array.isArray(have) ? have[0] : null;
+  if (r && r.periodFrom && r.periodTo) return have;
+  return execSQL(`EXEC ${RUN_SP} @action='OPEN',@runMonth=${esc(runMonth)}`);
+};
 
 export const fetchRunDetails = (runId) =>
   execSQL(

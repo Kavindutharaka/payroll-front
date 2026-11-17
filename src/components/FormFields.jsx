@@ -106,13 +106,22 @@ function DateInput({ className = "", value, onChange, id, name, disabled, ...res
 }
 
 /* ─── CustomInput — replaces <TextInput> ────────────────────────────────── */
+/* Width classes (w-64, sm:w-72, flex-1 ...) size the wrapper - the box that sits in the
+ * row - while the field itself always fills it. On the field they had no effect. */
+const SIZE = /^(?:[a-z]+:)*(?:w-|max-w-|min-w-|flex-1$|grow$|basis-)/;
+const splitSize = (cls = "") => {
+  const parts = cls.split(/\s+/).filter(Boolean);
+  return [parts.filter((c) => SIZE.test(c)).join(" "), parts.filter((c) => !SIZE.test(c)).join(" ")];
+};
+
 export function CustomInput({ icon: Icon, className = "", sizing, ...props }) {
   if (props.type === "date") return <DateInput className={className} {...props} />;
   if (Icon) {
+    const [size, rest] = splitSize(className);
     return (
-      <div className="relative">
+      <div className={`relative ${size}`}>
         <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-        <input className={`${base} pl-9 ${className}`} {...props} />
+        <input className={`${base} pl-9 ${rest}`} {...props} />
       </div>
     );
   }
@@ -121,12 +130,13 @@ export function CustomInput({ icon: Icon, className = "", sizing, ...props }) {
 
 /* ─── CustomSelect — replaces <Select> ──────────────────────────────────── */
 export function CustomSelect({ className = "", sizing, children, ...props }) {
+  const [size, rest] = splitSize(className);
   return (
-    <div className="relative">
+    <div className={`relative ${size}`}>
       <select
         className={
           `${base} appearance-none cursor-pointer pr-8 ` +
-          `dark:bg-gray-700 dark:[color-scheme:dark] ${className}`
+          `dark:bg-gray-700 dark:[color-scheme:dark] ${rest}`
         }
         {...props}
       >

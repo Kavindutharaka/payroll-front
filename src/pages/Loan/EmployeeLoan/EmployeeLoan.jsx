@@ -167,11 +167,11 @@ export default function EmployeeLoan() {
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-5 py-3 dark:border-gray-700">
-            <div className="w-72">
+            <div className="w-full sm:w-72">
               <CustomInput icon={HiSearch} value={query} onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by EPF number or name…" />
             </div>
-            <div className="w-64">
+            <div className="w-full sm:w-64">
               <CustomSelect value={type} onChange={(e) => setType(e.target.value)}>
                 <option value="all">All Loan Types</option>
                 {types.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -190,7 +190,7 @@ export default function EmployeeLoan() {
             )}
             <span className="text-xs text-gray-400">{shown.length} of {loans.length}</span>
           </div>
-          <div className="overflow-x-auto">
+          <div className="table-viewport">
             <CustomTable hoverable>
               <CustomTableHead>
                 <CustomTableRow>

@@ -19,6 +19,7 @@ import { calcPAYE } from "../../../services/payrollRunService";
 import { downloadCSV } from "../../../services/reportService";
 import { confirmDialog } from "../../../ui/feedback";
 import { useCan } from "../../../auth/AuthContext";
+import { freshReads } from "../../../services/api";
 
 const DEFAULT_MODE = "Tax Table 1";   // the monthly table, used when someone has no payroll month yet
 
@@ -78,10 +79,10 @@ export default function BonusSheet() {
   const handleGenerate = async () => {
     setBusy("Generating…"); setError("");
     try {
-      const [emps, structures, leave, late] = await Promise.all([
+      const [emps, structures, leave, late] = await freshReads(() => Promise.all([
         fetchActiveEmployees(), fetchAllStructures(), fetchBonusLeave(month).catch(() => []),
         fetchBonusLate(month).catch(() => []),
-      ]);
+      ]));
       const leaveBy = Object.fromEntries((Array.isArray(leave) ? leave : []).map((x) => [String(x.emp_id), Number(x.days) || 0]));
       const lateBy  = Object.fromEntries((Array.isArray(late) ? late : []).map((x) => [String(x.emp_id), x]));
       // budgetary allowance per employee — it forms part of the bonus
@@ -297,7 +298,7 @@ export default function BonusSheet() {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="overflow-x-auto">
+          <div className="table-viewport">
             <CustomTable hoverable>
               <CustomTableHead>
                 <CustomTableRow>

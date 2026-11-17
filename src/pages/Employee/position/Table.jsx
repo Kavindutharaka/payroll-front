@@ -37,7 +37,7 @@ export function PositionTable() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Employee Positions</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage and organize your employee positions</p>
@@ -48,7 +48,7 @@ export function PositionTable() {
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="overflow-x-auto">
+        <div className="table-viewport">
           <CustomTable hoverable>
             <CustomTableHead>
               <CustomTableRow>
@@ -86,7 +86,7 @@ export function PositionTable() {
             </CustomTableBody>
           </CustomTable>
         </div>
-        <div className="flex items-center justify-between border-t border-gray-200 px-5 py-3 dark:border-gray-700">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-5 py-3 dark:border-gray-700">
           <span className="text-sm text-gray-500 dark:text-gray-400">
             Showing <span className="font-semibold text-gray-700 dark:text-white">{positions.length}</span> entries
           </span>

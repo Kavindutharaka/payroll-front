@@ -57,8 +57,8 @@ export default function AssignComponentForm({ employee, closeForm, onSave, initi
   const empName = `${employee?.initial ?? ""} ${employee?.firstName ?? ""} ${employee?.surName ?? ""}`.trim();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
+    <div className="fb-fade fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="fb-pop relative w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:max-h-[90vh] sm:rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-purple-600 px-6 py-4">
           <div>
             <h3 className="text-lg font-semibold text-white">
@@ -66,13 +66,13 @@ export default function AssignComponentForm({ employee, closeForm, onSave, initi
             </h3>
             <p className="text-sm text-purple-200">{empName}</p>
           </div>
-          <button type="button" onClick={closeForm}
+          <button type="button" onClick={closeForm} data-modal-close aria-label="Close"
             className="rounded-lg p-1.5 text-purple-200 hover:bg-purple-500 hover:text-white">
             <HiX className="h-5 w-5" />
           </button>
         </div>
         <form className="flex flex-col gap-5 px-6 py-6" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="component">Component</CustomLabel>
               <CustomSelect id="component" value={form.componentName} onChange={pickComponent} required>
@@ -93,7 +93,7 @@ export default function AssignComponentForm({ employee, closeForm, onSave, initi
               </CustomSelect>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="calcType">Calculation Type</CustomLabel>
               <CustomSelect id="calcType" value={form.calcType} onChange={set("calcType")}>
@@ -111,7 +111,7 @@ export default function AssignComponentForm({ employee, closeForm, onSave, initi
           {/* Allowances such as Club & Societies (16th to 15th) and Sports (11th to
               10th) cover a period of their own, so a component can have an end date */}
           <div className="flex flex-col gap-1.5">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <CustomLabel htmlFor="effectiveFrom">Effective From</CustomLabel>
                 <CustomInput id="effectiveFrom" type="date" value={form.effectiveFrom} onChange={set("effectiveFrom")} required />

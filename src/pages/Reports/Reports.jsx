@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { StatusBadge } from "../../components/StatusBadge";
 import Layout from "../../components/Layout";
 import {
   HiChartBar, HiDocumentText, HiCurrencyDollar, HiBriefcase,
-  HiCalendar, HiDownload, HiEye, HiExclamation, HiTable, HiPrinter,
+  HiCalendar, HiDownload, HiExclamation, HiTable, HiPrinter, HiSearch, HiX, HiArrowLeft,
 } from "react-icons/hi";
 import { CustomButton, CustomInput } from "../../components/FormFields";
+import { LoadingLine } from "../../components/CustomTable";
 import {
   fetchPayrollSummaryReport, fetchPayrollDetailReport, fetchTaxReport,
   fetchEpfEtfReport, fetchLoanReport, fetchLeaveReport, downloadCSV,
@@ -517,9 +519,47 @@ const REPORTS = [
   },
 ];
 
+/* The list on the left, in the order people look for things */
+const GROUPS = [
+  ["Payroll", ["payroll-summary", "payroll-detail", "payroll-print-sheet", "month-comparison", "allowance-breakdown", "category-allowance"]],
+  ["Tax & statutory", ["tax-report", "paye-statement", "epf-etf-report", "epf-statement", "etf-statement", "stamp-duty"]],
+  ["Bank & payments", ["bank-payment-file", "bank-details", "cash-payments", "cheque-payments"]],
+  ["Deductions & loans", ["deduction-insurance", "deduction-advance", "deduction-festival", "deduction-loan", "deduction-other", "loan-report"]],
+  ["Staff", ["employee-list", "leave-report", "contract-staff", "contract-renewal"]],
+];
+const BY_ID = Object.fromEntries(REPORTS.map((r) => [r.id, r]));
+// anything not placed above still shows, at the end
+const PLACED = new Set(GROUPS.flatMap(([, ids]) => ids));
+const LIST = [...GROUPS, ["Other", REPORTS.filter((r) => !PLACED.has(r.id)).map((r) => r.id)]]
+  .map(([label, ids]) => [label, ids.map((id) => BY_ID[id]).filter(Boolean)])
+  .filter(([, items]) => items.length);
+
+const pad = (n) => String(n).padStart(2, "0");
+const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+/* One-click periods: this month, last month, and the tax year (April to March) */
+const PRESETS = [
+  ["This month", () => monthBounds()],
+  ["Last month", () => { const d = new Date(); return [ymd(new Date(d.getFullYear(), d.getMonth() - 1, 1)), ymd(new Date(d.getFullYear(), d.getMonth(), 0))]; }],
+  ["Tax year", () => { const d = new Date(); const y = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1; return [`${y}-04-01`, `${y + 1}-03-31`]; }],
+];
+
 export default function Reports() {
   const canExport = useCan()("reports.export");
-  const [selectedId, setSelectedId] = useState(null);
+  // the open report is part of the address (?r=...), so a refresh or Back keeps it
+  const [params, setParams] = useSearchParams();
+  const selectedId = BY_ID[params.get("r")] ? params.get("r") : null;
+  const setSelectedId = useCallback((id) => setParams(id ? { r: id } : {}, { replace: true }), [setParams]);
+  const [search, setSearch] = useState("");
+
+  // phone / tablet: the list gives way to the detail - start it at the top
+  useEffect(() => { if (window.innerWidth < 1024) window.scrollTo(0, 0); }, [selectedId]);
+  const tableRef = useRef(null);
+  const shownGroups = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return LIST;
+    return LIST.map(([label, items]) => [label, items.filter((r) => `${r.name} ${r.description}`.toLowerCase().includes(term))])
+      .filter(([, items]) => items.length);
+  }, [search]);
   const [from, setFrom]             = useState(() => monthBounds()[0]);
   const [to, setTo]                 = useState(() => monthBounds()[1]);
   const [rows, setRows]             = useState([]);
@@ -550,6 +590,7 @@ export default function Reports() {
   const current   = Math.min(page, pageCount);
   const visible   = rows.slice((current - 1) * PER_PAGE, current * PER_PAGE);
   useEffect(() => { setPage(1); }, [selectedId, from, to]);
+  useEffect(() => { tableRef.current?.scrollTo?.({ top: 0 }); }, [selectedId, from, to, page]);
 
   const runReport = useCallback(async (rep, m) => {
     if (!rep) return;
@@ -779,164 +820,208 @@ export default function Reports() {
       {!canExport && (
         <p className="hidden p-8 text-sm text-gray-700 print:block">Printing reports isn't part of your role. Ask the payroll administrator if you need a printed copy.</p>
       )}
-      <div className={`flex flex-col gap-6 ${canExport ? "" : "print:hidden"}`}>
+      <div className={`flex flex-col gap-4 lg:h-[calc(100vh-3rem)] ${canExport ? "" : "print:hidden"}`}>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Reports</h1>
-            <p className="mt-1 text-sm text-gray-500">Generate, view and export payroll reports</p>
-          </div>
-          {report?.range && (
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="w-40">
-                <p className="mb-1 text-xs text-gray-500">From</p>
-                <CustomInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-              </div>
-              <div className="w-40">
-                <p className="mb-1 text-xs text-gray-500">To</p>
-                <CustomInput type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-              </div>
-            </div>
-          )}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Reports</h1>
+          <p className="mt-1 hidden text-sm text-gray-500 dark:text-gray-400 sm:block">Pick a report from the list. It opens alongside, with its period, totals and exports.</p>
         </div>
 
-        {/* Report cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {REPORTS.map((r) => {
-            const Icon = r.icon;
-            const active = selectedId === r.id;
-            return (
-              <div key={r.id}
-                onClick={() => setSelectedId(active ? null : r.id)}
-                className={`cursor-pointer rounded-xl border p-5 shadow-sm transition-all hover:shadow-md ${
-                  active ? "border-purple-400 bg-purple-50 dark:border-purple-600 dark:bg-purple-900/20"
-                         : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"}`}>
-                <div className="flex items-start gap-4">
-                  <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${r.color}`}>
-                    <Icon className="h-6 w-6" />
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[17rem_minmax(0,1fr)]">
+
+          {/* Report list */}
+          <aside className={`${report ? "hidden lg:flex" : "flex"} min-h-0 flex-col rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800`} aria-label="Reports">
+            <div className="border-b border-gray-100 p-3 dark:border-gray-700">
+              <label className="relative block">
+                <span className="sr-only">Find a report</span>
+                <HiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find a report"
+                  className="w-full rounded-lg border border-gray-300 bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/30 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+              </label>
+            </div>
+            <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
+              {shownGroups.length === 0 ? (
+                <p className="px-3 py-6 text-center text-sm text-gray-400">No report matches “{search.trim()}”.</p>
+              ) : shownGroups.map(([label, items]) => (
+                <div key={label} className="mb-2 last:mb-0">
+                  <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</p>
+                  {items.map((r) => {
+                    const Icon = r.icon;
+                    const active = selectedId === r.id;
+                    return (
+                      <button key={r.id} type="button" onClick={() => setSelectedId(r.id)} aria-current={active ? "page" : undefined}
+                        title={r.description}
+                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40 ${
+                          active ? "bg-purple-50 font-semibold text-purple-700 dark:bg-purple-900/30 dark:text-purple-200"
+                                 : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"}`}>
+                        <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md ${r.color}`}>
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">{r.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </nav>
+          </aside>
+
+          {/* The open report */}
+          {!report ? (
+            <section className="hidden min-h-[20rem] flex-col items-center justify-center rounded-xl border border-dashed lg:flex border-gray-300 bg-white px-6 text-center dark:border-gray-600 dark:bg-gray-800">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300">
+                <HiChartBar className="h-6 w-6" />
+              </span>
+              <p className="mt-3 text-sm font-semibold text-gray-800 dark:text-gray-100">Choose a report</p>
+              <p className="mt-1 max-w-sm text-sm text-gray-500 dark:text-gray-400">
+                {REPORTS.length} reports, grouped by what they’re for. They open on the current month; change the period once one is open.
+              </p>
+            </section>
+          ) : (
+            <section className="flex min-h-0 flex-col rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+              {/* title, period and exports */}
+              <div className="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 dark:border-gray-700">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <button type="button" onClick={() => setSelectedId(null)}
+                      className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 lg:hidden">
+                      <HiArrowLeft className="h-4 w-4" /> All reports
+                    </button>
+                    <h2 className="font-semibold text-gray-800 dark:text-white">{report.name}</h2>
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{report.description}</p>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{r.name}</p>
-                      {active && <StatusBadge color="purple" className="text-xs">Viewing</StatusBadge>}
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{r.description}</p>
-                    <div className="mt-3">
-                      <CustomButton size="xs" color="purple" outline
-                        onClick={(e) => { e.stopPropagation(); setSelectedId(r.id); }}>
-                        <HiEye className="mr-1 h-3.5 w-3.5" /> View
+                  <div className="flex flex-wrap gap-2">
+                    {report.textFile && (
+                      <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0 || loading} onClick={handleTextFile}>
+                        <HiDocumentText className="mr-2 h-4 w-4" /> Text File
                       </CustomButton>
-                    </div>
+                    )}
+                    {report.excel && (
+                      <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0 || exporting || blocked || loading}
+                        onClick={handleExcel} title="One Excel sheet per month of the range, for the auditors">
+                        <HiTable className="mr-2 h-4 w-4" /> {exporting ? "Building…" : "Excel (by month)"}
+                      </CustomButton>
+                    )}
+                    <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0 || loading} onClick={() => window.print()}>
+                      <HiPrinter className="mr-2 h-4 w-4" /> Print
+                    </CustomButton>
+                    <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0 || loading} onClick={handlePdf}>
+                      <HiDocumentText className="mr-2 h-4 w-4" /> PDF
+                    </CustomButton>
+                    <CustomButton perm="reports.export" color="purple" size="sm" disabled={rows.length === 0 || loading} onClick={handleExport}>
+                      <HiDownload className="mr-2 h-4 w-4" /> CSV
+                    </CustomButton>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
 
-        {error && (
-          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
-            <HiExclamation className="h-5 w-5 flex-shrink-0" /> {error}
-          </div>
-        )}
-
-        {/* Preview */}
-        {report && (
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-gray-700">
-              <div>
-                <p className="font-semibold text-gray-800 dark:text-white">{report.name}</p>
-                {report.range && <p className="text-xs text-gray-500">{rangeLabel}</p>}
-              </div>
-              <div className="flex gap-2">
-                {report.textFile && (
-                  <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0} onClick={handleTextFile}>
-                    <HiDocumentText className="mr-2 h-4 w-4" /> Text File
-                  </CustomButton>
+                {report.range ? (
+                  <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+                    <div className="w-[calc(50%-0.5rem)] sm:w-40">
+                      <p className="mb-1 text-xs text-gray-500">From</p>
+                      <CustomInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+                    </div>
+                    <div className="w-[calc(50%-0.5rem)] sm:w-40">
+                      <p className="mb-1 text-xs text-gray-500">To</p>
+                      <CustomInput type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pb-1.5">
+                      {PRESETS.filter(([label]) => !(report.range === "single" && label === "Tax year")).map(([label, get]) => {
+                        const [f, t] = get();
+                        const on = f === from && t === to;
+                        return (
+                          <button key={label} type="button" onClick={() => { setFrom(f); setTo(t); }} aria-pressed={on}
+                            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${on
+                              ? "border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-700 dark:bg-purple-900/30 dark:text-purple-200"
+                              : "border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"}`}>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="pb-2 text-xs text-gray-500 dark:text-gray-400">
+                      Showing <span className="font-medium text-gray-700 dark:text-gray-200">{rangeLabel}</span>
+                      {report.range === "single" ? " · one-month file" : ""}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">As of today. This report has no period.</p>
                 )}
-                {report.excel && (
-                  <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0 || exporting || blocked}
-                    onClick={handleExcel} title="One Excel sheet per month of the range, for the auditors">
-                    <HiTable className="mr-2 h-4 w-4" /> {exporting ? "Building…" : "Excel (by month)"}
-                  </CustomButton>
-                )}
-                <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0} onClick={() => window.print()}>
-                  <HiPrinter className="mr-2 h-4 w-4" /> Print
-                </CustomButton>
-                <CustomButton perm="reports.export" color="gray" outline size="sm" disabled={rows.length === 0} onClick={handlePdf}>
-                  <HiDocumentText className="mr-2 h-4 w-4" /> PDF
-                </CustomButton>
-                <CustomButton perm="reports.export" color="purple" size="sm" disabled={rows.length === 0} onClick={handleExport}>
-                  <HiDownload className="mr-2 h-4 w-4" /> Export CSV
-                </CustomButton>
-              </div>
-            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase text-gray-500 dark:border-gray-700 dark:bg-gray-900/50">
-                  <tr>
-                    {columns.map((c) => <th key={c.key} className="whitespace-nowrap px-5 py-3">{c.label}</th>)}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {loading ? (
-                    <tr><td colSpan={columns.length} className="px-5 py-10 text-center text-gray-400">Loading…</td></tr>
-                  ) : rows.length === 0 ? (
-                    <tr><td colSpan={columns.length} className="px-5 py-10 text-center text-gray-400">
-                      {emptyMessage}
-                    </td></tr>
-                  ) : visible.map((r, i) => (
-                    <tr key={`${r.emp_id ?? r.runMonth ?? i}-${i}`}
-                      className={r._subtotal ? "bg-gray-50 font-semibold dark:bg-gray-900/40" : "hover:bg-purple-50 dark:hover:bg-gray-700"}>
-                      {columns.map((c) => (
-                        <td key={c.key} className={`${c.wrap ? "min-w-[18rem] whitespace-normal" : "whitespace-nowrap"} px-5 py-3 ${
-                          c.tone && !r._subtotal ? (c.tone(r) || "text-gray-700 dark:text-gray-300")
-                            : c.strong ? "font-bold text-green-600" : "text-gray-700 dark:text-gray-300"}`}>
-                          {c.badge && !r._subtotal ? (
-                            <StatusBadge color={statusColor[r[c.key]] ?? "gray"} className="w-fit text-xs">{r[c.key]}</StatusBadge>
-                          ) : c.render ? c.render(r)
-                            : c.money ? `Rs. ${money(r[c.key])}`
-                            : (r[c.key] ?? "—")}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-                {rows.length > 0 && columns.some((c) => c.money) && (
-                  <tfoot className="border-t-2 border-gray-200 bg-gray-50 text-sm font-semibold dark:border-gray-600 dark:bg-gray-900/50">
+                {error && (
+                  <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+                    <HiExclamation className="h-5 w-5 flex-shrink-0" /> {error}
+                    <button type="button" onClick={() => setError("")} className="ml-auto rounded p-0.5 hover:bg-red-100 dark:hover:bg-red-900/40" aria-label="Dismiss">
+                      <HiX className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* the figures scroll here; the headings and the total stay put */}
+              <div ref={tableRef} className="min-h-[16rem] flex-1 overflow-auto overscroll-contain">
+                <table className="w-full text-left text-sm">
+                  <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase text-gray-500 shadow-[inset_0_-1px_0_rgb(229,231,235)] dark:bg-gray-900 dark:text-gray-400 dark:shadow-[inset_0_-1px_0_rgb(55,65,81)]">
                     <tr>
-                      {columns.map((c, idx) => (
-                        <td key={c.key} className="whitespace-nowrap px-5 py-3 text-gray-700 dark:text-gray-200">
-                          {idx === 0 ? "TOTAL" : c.money ? `Rs. ${money(totalsFor(c.key))}` : ""}
-                        </td>
-                      ))}
+                      {columns.map((c) => <th key={c.key} className={`whitespace-nowrap px-5 py-3 ${c.money || c.num ? "text-right" : ""}`}>{c.label}</th>)}
                     </tr>
-                  </tfoot>
-                )}
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {loading ? (
+                      <tr><td colSpan={columns.length} className="py-12 text-sm text-gray-400"><div className="table-message"><LoadingLine label={`Loading ${report.name}…`} /></div></td></tr>
+                    ) : rows.length === 0 ? (
+                      <tr><td colSpan={columns.length} className="py-12 text-sm text-gray-400"><div className="table-message">{emptyMessage}</div></td></tr>
+                    ) : visible.map((r, i) => (
+                      <tr key={`${r.emp_id ?? r.runMonth ?? i}-${i}`}
+                        className={r._subtotal ? "bg-gray-50 font-semibold dark:bg-gray-900/40" : "hover:bg-purple-50 dark:hover:bg-gray-700"}>
+                        {columns.map((c) => (
+                          <td key={c.key} className={`${c.wrap ? "min-w-[18rem] whitespace-normal" : "whitespace-nowrap"} px-5 py-2.5 ${c.money || c.num ? "text-right tabular-nums" : ""} ${
+                            c.tone && !r._subtotal ? (c.tone(r) || "text-gray-700 dark:text-gray-300")
+                              : c.strong ? "font-bold text-green-600 dark:text-green-400" : "text-gray-700 dark:text-gray-300"}`}>
+                            {c.badge && !r._subtotal ? (
+                              <StatusBadge color={statusColor[r[c.key]] ?? "gray"} className="w-fit text-xs">{r[c.key]}</StatusBadge>
+                            ) : c.render ? c.render(r)
+                              : c.money ? money(r[c.key])
+                              : (r[c.key] ?? "—")}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                  {!loading && rows.length > 0 && columns.some((c) => c.money) && (
+                    <tfoot className="sticky bottom-0 z-10 bg-gray-50 text-sm font-semibold shadow-[inset_0_1px_0_rgb(209,213,219)] dark:bg-gray-900 dark:shadow-[inset_0_1px_0_rgb(75,85,99)]">
+                      <tr>
+                        {columns.map((c, idx) => (
+                          <td key={c.key} className={`whitespace-nowrap px-5 py-3 text-gray-800 dark:text-gray-100 ${c.money ? "text-right tabular-nums" : ""}`}>
+                            {idx === 0 ? "TOTAL" : c.money ? money(totalsFor(c.key)) : ""}
+                          </td>
+                        ))}
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
 
-            {rows.length > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-5 py-3 text-xs text-gray-400 dark:border-gray-700">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-5 py-2.5 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
                 <span>
-                  {pageCount > 1
-                    ? `Showing ${(current - 1) * PER_PAGE + 1}–${Math.min(current * PER_PAGE, rows.length)} of ${rows.length} rows · ${recordCount} records`
-                    : `${recordCount} record${recordCount !== 1 ? "s" : ""}`}
+                  {loading ? "Loading…" : rows.length === 0 ? "No records"
+                    : pageCount > 1
+                      ? `Rows ${(current - 1) * PER_PAGE + 1}–${Math.min(current * PER_PAGE, rows.length)} of ${rows.length} · ${recordCount} records`
+                      : `${recordCount} record${recordCount !== 1 ? "s" : ""}`}
+                  {!loading && rows.length > 0 && columns.some((c) => c.money) ? " · amounts in Rs. · the total covers every page" : ""}
                 </span>
-                {pageCount > 1 && (
+                {pageCount > 1 && !loading && (
                   <div className="flex items-center gap-2">
                     <CustomButton size="xs" color="gray" outline disabled={current <= 1}
                       onClick={() => setPage(current - 1)}>Previous</CustomButton>
-                    <span className="text-gray-500">Page {current} of {pageCount}</span>
+                    <span>Page {current} of {pageCount}</span>
                     <CustomButton size="xs" color="gray" outline disabled={current >= pageCount}
                       onClick={() => setPage(current + 1)}>Next</CustomButton>
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        )}
+            </section>
+          )}
+        </div>
 
         {/* The printed copy: all rows on plain paper, with the title, period and
             totals. Hidden on screen; the only thing that prints from this page. */}
@@ -1008,11 +1093,6 @@ export default function Reports() {
           }
         `}</style>
 
-        {!report && (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white py-12 text-center text-sm text-gray-400 dark:border-gray-600 dark:bg-gray-800">
-            Select a report above to view it.
-          </div>
-        )}
       </div>
     </Layout>
   );

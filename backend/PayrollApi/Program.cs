@@ -43,11 +43,25 @@ builder.Services.AddSingleton<ObjectCatalog>();
 builder.Services.AddSingleton<AuditLog>();
 builder.Services.AddSingleton<TokenService>();
 
+// Payroll answers are large and repetitive JSON (one month's sheet is ~200 KB) - compressed
+// they are a tenth of that, which is most of the wait on a slow office connection.
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    o.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+});
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins(settings.Cors.AllowedOrigins)
     .AllowAnyHeader()
     .WithMethods("GET", "POST", "PUT", "DELETE")
-    .WithExposedHeaders("Content-Disposition")));
+    .WithExposedHeaders("Content-Disposition")
+    // the browser asks "may I?" (OPTIONS) before each request from the app's own address;
+    // remembering the answer saves a round trip on every one of them
+    .SetPreflightMaxAge(TimeSpan.FromHours(2))));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o =>
 {
@@ -116,6 +130,8 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
+// data only: sign-in answers carry the session token and stay uncompressed (BREACH)
+app.UseWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api/auth"), branch => branch.UseResponseCompression());
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

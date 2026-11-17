@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { http, tokenStore, authEvents } from "../services/api";
+import { http, tokenStore, authEvents, clearReadCache } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
 
   const endSession = useCallback((message = "") => {
     tokenStore.clear();
+    clearReadCache();   // the next person must not be answered from this one's data
     setUser(null);
     setStatus("signedOut");
     setNotice(message);
@@ -46,6 +47,7 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (username, password) => {
     const { data } = await http.post("/api/auth/login", { username, password });
     tokenStore.set(data.token);
+    clearReadCache();
     setNotice("");
     setUser(data.user);
     setStatus("signedIn");

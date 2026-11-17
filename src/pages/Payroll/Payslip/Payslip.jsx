@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Layout from "../../../components/Layout";
-import { HiDocumentText, HiPrinter, HiSearch, HiExclamation } from "react-icons/hi";
+import { HiDocumentText, HiPrinter, HiSearch, HiExclamation, HiArrowLeft } from "react-icons/hi";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { CustomButton, CustomInput } from "../../../components/FormFields";
 import { StatusBadge } from "../../../components/StatusBadge";
@@ -188,6 +188,9 @@ export default function Payslip() {
   const [run, setRun]           = useState(null);
   const [rows, setRows]         = useState([]);
   const [selected, setSelected] = useState(null);
+
+  // phone / tablet: the list gives way to the detail - start it at the top
+  useEffect(() => { if (window.innerWidth < 1024) window.scrollTo(0, 0); }, [selected?.id]);
   const [search, setSearch]     = useState("");
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
@@ -270,16 +273,16 @@ export default function Payslip() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
 
           {/* List */}
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm print:hidden dark:border-gray-700 dark:bg-gray-800">
+          <div className={`${selected ? "hidden lg:block" : ""} rounded-xl border border-gray-200 bg-white shadow-sm print:hidden dark:border-gray-700 dark:bg-gray-800`}>
             <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-700">
               <p className="text-sm font-semibold text-gray-700 dark:text-white">Employee Payslips</p>
               <CustomInput icon={HiSearch} placeholder="Search name or ID..." sizing="sm" className="mt-2"
                 value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <div className="max-h-[70vh] overflow-y-auto">
+            <div className="overflow-y-auto lg:max-h-[calc(100vh-17rem)]">
               <CustomTable hoverable>
                 <CustomTableHead>
                   <CustomTableRow>
@@ -316,7 +319,7 @@ export default function Payslip() {
           </div>
 
           {/* Preview */}
-          <div className="lg:col-span-2">
+          <div className={`${selected ? "" : "hidden lg:block"} lg:col-span-2`}>
             {!selected ? (
               <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white text-gray-400 shadow-sm print:hidden dark:border-gray-700 dark:bg-gray-800">
                 <HiDocumentText className="h-10 w-10" />
@@ -324,6 +327,10 @@ export default function Payslip() {
               </div>
             ) : (
               <>
+                <button type="button" onClick={() => setSelected(null)}
+                  className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-700 print:hidden dark:text-purple-400 lg:hidden">
+                  <HiArrowLeft className="h-4 w-4" /> All payslips
+                </button>
                 <div className="mb-3 flex flex-wrap items-end justify-end gap-2 print:hidden">
                   <div className="mr-auto flex flex-wrap items-end gap-2">
                     <div className="flex flex-col gap-1">

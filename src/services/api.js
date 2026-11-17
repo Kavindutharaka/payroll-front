@@ -46,9 +46,62 @@ http.interceptors.response.use(
   }
 );
 
+/* ---------------------------------------------------------------------------------
+ * Read cache. Moving between screens used to fetch the same employees, components and
+ * runs again every time - each fetch is a round trip to the server. Now:
+ *  - the same read asked for twice at once goes to the server once;
+ *  - a read answered in the last READ_TTL seconds is answered from memory;
+ *  - any change made from this browser empties the cache (before and after it runs),
+ *    so a screen never shows its own edit missing.
+ * Changes made by someone else on another PC show up within READ_TTL seconds; the
+ * calculations that must use live figures run inside freshReads(). */
+const READ_TTL = 30_000;
+const CACHE_MAX = 200;
+const cache = new Map();      // sql -> { at, data }
+const inflight = new Map();   // sql -> Promise
+let generation = 0;           // bumped by every change; older answers aren't kept
+let freshDepth = 0;
+
+// The two read-only procedures; every other EXEC changes something
+const READ_PROCS = /\bEXEC(?:UTE)?\s+(?:dbo\.)?payroll_(?:period_employees|increment_for_month)_sp\b/gi;
+const WRITES = /\b(?:INSERT|UPDATE|DELETE|MERGE|EXEC|EXECUTE|TRUNCATE|TRAN|TRANSACTION)\b/i;
+const isWrite = (sql) => WRITES.test(sql.replace(READ_PROCS, ''));
+
+const copy = (d) => (d && typeof d === 'object' ? structuredClone(d) : d);
+
+export const clearReadCache = () => { generation += 1; cache.clear(); inflight.clear(); };
+
+/** Run `work` with every read going to the server - for calculations. */
+export const freshReads = async (work) => {
+  freshDepth += 1;
+  try { return await work(); } finally { freshDepth -= 1; }
+};
+
+const post = async (sql) => (await http.post('/api/sql', { SysID: sql })).data;
+
 export const execSQL = async (sql) => {
-  const { data } = await http.post('/api/sql', { SysID: sql });
-  return data;
+  if (isWrite(sql)) {
+    clearReadCache();
+    try { return await post(sql); } finally { clearReadCache(); }
+  }
+  if (freshDepth === 0) {
+    const hit = cache.get(sql);
+    if (hit && Date.now() - hit.at < READ_TTL) return copy(hit.data);
+  }
+  let p = inflight.get(sql);
+  if (!p) {
+    const gen = generation;
+    p = post(sql).then((data) => {
+      if (gen === generation) {
+        cache.delete(sql);
+        cache.set(sql, { at: Date.now(), data });
+        if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value);
+      }
+      return data;
+    }).finally(() => { if (inflight.get(sql) === p) inflight.delete(sql); });
+    inflight.set(sql, p);
+  }
+  return copy(await p);
 };
 
 /* Several statements sent as one all-or-nothing request: if any of them fails,

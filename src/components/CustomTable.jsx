@@ -33,7 +33,7 @@ export function CustomTableHead({ className = "", children, ...props }) {
   return (
     <RowContext.Provider value="head">
       <thead
-        className={`bg-gray-50 dark:bg-gray-700/60 ${className}`}
+        className={`sticky top-0 z-10 bg-gray-50 shadow-[inset_0_-1px_0_rgb(229,231,235)] dark:bg-gray-700 dark:shadow-[inset_0_-1px_0_rgb(75,85,99)] ${className}`}
         {...props}
       >
         {children}
@@ -82,14 +82,30 @@ export function CustomTableHeadCell({ className = "", children, ...props }) {
   );
 }
 
-/** <td> */
+/** <td>. A cell spanning the whole table (a "Loading…" or "Nothing here yet" line)
+ *  keeps its message in view: on a wide sheet it was centred on the full width of the
+ *  table, off to the right of the screen, and the table just looked empty. */
 export function CustomTableCell({ className = "", children, ...props }) {
+  const spansRow = Number(props.colSpan) > 2;
   return (
     <td
       className={`px-4 py-3 text-sm text-gray-700 dark:text-gray-300 ${className}`}
       {...props}
     >
-      {children}
+      {spansRow ? (
+        <div className="table-message">
+          {children === "Loading…" ? <LoadingLine /> : children}
+        </div>
+      ) : children}
     </td>
+  );
+}
+
+export function LoadingLine({ label = "Loading…" }) {
+  return (
+    <span className="inline-flex items-center gap-2" role="status">
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-purple-600 dark:border-gray-600 dark:border-t-purple-400" />
+      {label}
+    </span>
   );
 }

@@ -27,20 +27,20 @@ export default function ComponentForm({ closeForm, initialData, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
+    <div className="fb-fade fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="fb-pop relative w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:max-h-[90vh] sm:rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-purple-600 px-6 py-4">
           <div>
             <h3 className="text-lg font-semibold text-white">{isEdit ? "Edit Component" : "Create Salary Component"}</h3>
             <p className="text-sm text-purple-200">Define a dynamic payroll component</p>
           </div>
-          <button type="button" onClick={closeForm}
+          <button type="button" onClick={closeForm} data-modal-close aria-label="Close"
             className="rounded-lg p-1.5 text-purple-200 hover:bg-purple-500 hover:text-white">
             <HiX className="h-5 w-5" />
           </button>
         </div>
         <form className="flex flex-col gap-5 px-6 py-6" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="name">Component Name</CustomLabel>
               <CustomInput id="name" value={form.name} onChange={set("name")} placeholder="e.g. Mobile Allowance" required />
@@ -54,7 +54,7 @@ export default function ComponentForm({ closeForm, initialData, onSave }) {
               </CustomSelect>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="calcType">Calculation Type</CustomLabel>
               <CustomSelect id="calcType" value={form.calcType} onChange={set("calcType")}>
@@ -78,7 +78,7 @@ export default function ComponentForm({ closeForm, initialData, onSave }) {
           {form.calcType === "Formula Based" && (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs dark:border-gray-600 dark:bg-gray-700">
               <p className="mb-1.5 font-semibold text-gray-600 dark:text-gray-300">You can use these in a formula</p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[11px] text-gray-500 dark:text-gray-400">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 font-mono text-[11px] text-gray-500 dark:text-gray-400">
                 <span><b>basic</b> — basic salary</span>
                 <span><b>budgetary</b> — budgetary allowance</span>
                 <span><b>increment</b> — increment this month</span>

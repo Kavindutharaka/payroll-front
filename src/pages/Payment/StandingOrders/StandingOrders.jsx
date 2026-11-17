@@ -49,7 +49,7 @@ export default function StandingOrders() {
           </CustomButton>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="overflow-x-auto">
+          <div className="table-viewport">
             <CustomTable hoverable>
               <CustomTableHead>
                 <CustomTableRow>

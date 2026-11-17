@@ -31,6 +31,7 @@ import {
   HiKey,
   HiLogout,
   HiSelector,
+  HiX,
 } from "react-icons/hi";
 
 const navGroups = [
@@ -183,45 +184,58 @@ function AccountMenu() {
   );
 }
 
+// Which sections are open survives moving between screens (each screen draws its own
+// sidebar); the section holding the current screen is always opened.
+let remembered = {};
+
 // Build initial open state: auto-open sections that contain the active route
 function getInitialOpen(pathname) {
-  const open = {};
+  const open = { ...remembered };
   navGroups.forEach((group) => {
     group.items.forEach((item) => {
       if (item.children) {
-        open[item.label] = item.children.some((c) => pathname.startsWith(c.href));
+        if (item.children.some((c) => pathname.startsWith(c.href))) open[item.label] = true;
       }
     });
   });
   return open;
 }
 
-export function SideNav() {
+export function SideNav({ open = false, onClose = () => {} }) {
   const { pathname } = useLocation();
   const { can } = useAuth();
   const groups = visibleGroups(can);
   const [openSections, setOpenSections] = useState(() => getInitialOpen(pathname));
 
   const toggle = (label) =>
-    setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
+    setOpenSections((prev) => (remembered = { ...prev, [label]: !prev[label] }));
 
   const isActive = (href) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col overflow-x-hidden overflow-y-auto border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+    <>
+    {/* behind the drawer on tablet and phone */}
+    {open && <div className="fb-fade fixed inset-0 z-40 bg-gray-900/50 lg:hidden" onClick={onClose} aria-hidden="true" />}
+    <aside aria-label="Main menu"
+      className={`fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-72 max-w-[85vw] flex-col border-r border-gray-200 bg-white transition-transform duration-200 ease-out dark:border-gray-700 dark:bg-gray-900 lg:z-40 lg:w-64 lg:translate-x-0 ${
+        open ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}>
 
       {/* Brand */}
       <div className="flex flex-shrink-0 items-center gap-3 border-b border-gray-100 px-4 py-4 dark:border-gray-700">
         <img src="/ais-logo.jpg" alt="" className="h-9 w-9 flex-shrink-0 rounded-md bg-white object-contain" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-gray-800 dark:text-white">AIS Payroll</p>
           <p className="truncate text-xs text-gray-400 dark:text-gray-500">Asian International School</p>
         </div>
+        <button type="button" onClick={onClose} aria-label="Close menu"
+          className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden">
+          <HiX className="h-5 w-5" />
+        </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex flex-1 flex-col gap-5 overflow-x-hidden px-3 py-4">
+      {/* Navigation - only this part scrolls; brand and account stay put */}
+      <nav className="nav-scroll flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-4">
         {groups.map((group, gi) => (
           <div key={gi} className="flex flex-col gap-1">
 
@@ -240,13 +254,15 @@ export function SideNav() {
                   <Link
                     key={item.href}
                     to={item.href}
+                    onClick={onClose}
+                    aria-current={active ? "page" : undefined}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                       active
                         ? "bg-purple-600 text-white shadow-sm"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
                     }`}
                   >
-                    <item.icon className="h-4.5 w-4.5 flex-shrink-0 h-5 w-5" />
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
                     <span className="truncate">{item.label}</span>
                   </Link>
                 );
@@ -259,6 +275,8 @@ export function SideNav() {
               return (
                 <div key={item.label} className="flex flex-col">
                   <button
+                    type="button"
+                    aria-expanded={isOpen}
                     onClick={() => toggle(item.label)}
                     className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                       hasActive && !isOpen
@@ -284,6 +302,8 @@ export function SideNav() {
                           <Link
                             key={child.href}
                             to={child.href}
+                            onClick={onClose}
+                            aria-current={childActive ? "page" : undefined}
                             className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
                               childActive
                                 ? "bg-purple-600 font-medium text-white"
@@ -306,5 +326,6 @@ export function SideNav() {
 
       <AccountMenu />
     </aside>
+    </>
   );
 }

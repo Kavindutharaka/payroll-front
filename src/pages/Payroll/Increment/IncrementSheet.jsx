@@ -13,6 +13,7 @@ import {
 import { downloadCSV } from "../../../services/reportService";
 import { confirmDialog } from "../../../ui/feedback";
 import { useCan } from "../../../auth/AuthContext";
+import { freshReads } from "../../../services/api";
 
 const money = (v) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 // what the person will earn in basic + budgetary once the increment is in
@@ -64,7 +65,7 @@ export default function IncrementSheet() {
     }))) return;
     setBusy("Generating…"); setError(""); setNotice("");
     try {
-      const emps = await fetchActiveEmployees();
+      const emps = await freshReads(() => fetchActiveEmployees());
       const list = (Array.isArray(emps) ? emps : []).map((e) => ({
         emp_id: e.emp_id,
         empName: `${e.initial ?? ""} ${e.firstName ?? ""} ${e.surName ?? ""}`.replace(/\s+/g, " ").trim(),
@@ -270,7 +271,7 @@ export default function IncrementSheet() {
         )}
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="overflow-x-auto">
+          <div className="table-viewport">
             <CustomTable hoverable>
               <CustomTableHead>
                 <CustomTableRow>

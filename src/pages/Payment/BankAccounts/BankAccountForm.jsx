@@ -26,11 +26,11 @@ export default function BankAccountForm({ closeForm, initialData, onSave }) {
   const handleSubmit = (e) => { e.preventDefault(); onSave({ ...form, isDefault }); };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
+    <div className="fb-fade fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="fb-pop relative w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:max-h-[90vh] sm:rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
         <div className="flex items-center justify-between rounded-t-2xl bg-purple-600 px-6 py-4">
           <h3 className="text-lg font-semibold text-white">{initialData ? "Edit Bank Account" : "Add Bank Account"}</h3>
-          <button type="button" onClick={closeForm}
+          <button type="button" onClick={closeForm} data-modal-close aria-label="Close"
             className="rounded-lg p-1.5 text-purple-200 hover:bg-purple-500 hover:text-white">
             <HiX className="h-5 w-5" />
           </button>
@@ -45,7 +45,7 @@ export default function BankAccountForm({ closeForm, initialData, onSave }) {
               ))}
             </CustomSelect>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="bank">Bank Name</CustomLabel>
               <CustomInput id="bank" value={form.bank} onChange={set("bank")} placeholder="e.g. Bank of Ceylon" required />
@@ -63,7 +63,7 @@ export default function BankAccountForm({ closeForm, initialData, onSave }) {
             <CustomLabel htmlFor="accountNum">Account Number</CustomLabel>
             <CustomInput id="accountNum" value={form.accountNum} onChange={set("accountNum")} placeholder="e.g. 1234567890" required />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="bankCode">Bank Code</CustomLabel>
               <CustomInput id="bankCode" value={form.bankCode} onChange={set("bankCode")} placeholder="e.g. 7278" />
@@ -73,7 +73,7 @@ export default function BankAccountForm({ closeForm, initialData, onSave }) {
               <CustomInput id="branchCode" value={form.branchCode} onChange={set("branchCode")} placeholder="e.g. 040" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="splitType">Split Type</CustomLabel>
               <CustomSelect id="splitType" value={form.splitType} onChange={set("splitType")}>

@@ -17,8 +17,8 @@ export default function TaxSlabForm({ mode, modeId, closeForm, initialData, onSa
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
+    <div className="fb-fade fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="fb-pop relative w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:max-h-[90vh] sm:rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
         <div className="flex items-center justify-between rounded-t-2xl bg-purple-600 px-6 py-4">
           <div>
             <h3 className="text-lg font-semibold text-white">
@@ -26,13 +26,13 @@ export default function TaxSlabForm({ mode, modeId, closeForm, initialData, onSa
             </h3>
             <p className="text-sm text-purple-200">Mode: {mode}</p>
           </div>
-          <button type="button" onClick={closeForm}
+          <button type="button" onClick={closeForm} data-modal-close aria-label="Close"
             className="rounded-lg p-1.5 text-purple-200 hover:bg-purple-500 hover:text-white">
             <HiX className="h-5 w-5" />
           </button>
         </div>
         <form className="flex flex-col gap-4 px-6 py-6" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="slabFrom">From (Rs.)</CustomLabel>
               <CustomInput id="slabFrom" type="number" value={form.fromAmount} onChange={set("fromAmount")} placeholder="e.g. 0" required />
@@ -42,7 +42,7 @@ export default function TaxSlabForm({ mode, modeId, closeForm, initialData, onSa
               <CustomInput id="slabTo" type="number" value={form.toAmount} onChange={set("toAmount")} placeholder="e.g. 100000" required />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <CustomLabel htmlFor="rate">Tax Rate (%)</CustomLabel>
               <CustomInput id="rate" type="number" value={form.rate} onChange={set("rate")} placeholder="e.g. 6" required />

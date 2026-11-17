@@ -163,7 +163,7 @@ export default function Documents() {
             </div>
             <span className="text-xs text-gray-400">{shown.length} of {docs.length}</span>
           </div>
-          <div className="overflow-x-auto">
+          <div className="table-viewport">
             <CustomTable hoverable>
               <CustomTableHead>
                 <CustomTableRow>

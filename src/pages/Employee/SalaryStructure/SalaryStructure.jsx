@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { StatusBadge } from "../../../components/StatusBadge";
 import Layout from "../../../components/Layout";
-import { HiSearch, HiCurrencyDollar, HiPencil, HiPlus, HiTrash } from "react-icons/hi";
+import { HiSearch, HiCurrencyDollar, HiPencil, HiPlus, HiTrash, HiArrowLeft } from "react-icons/hi";
 import { displayName } from "../../Payroll/Payslip/Payslip";
 import AssignComponentForm from "./AssignComponentForm";
 import { CustomInput, CustomButton } from "../../../components/FormFields";
@@ -21,6 +21,9 @@ export default function SalaryStructure() {
   const [employees, setEmployees]   = useState([]);
   const [search, setSearch]         = useState("");
   const [selected, setSelected]     = useState(null);
+
+  // phone / tablet: the list gives way to the detail - start it at the top
+  useEffect(() => { if (window.innerWidth < 1024) window.scrollTo(0, 0); }, [selected?.id]);
   const [components, setComponents] = useState([]);
   const [showForm, setShowForm]     = useState(false);
   const [editData, setEditData]     = useState(null);
@@ -84,19 +87,21 @@ export default function SalaryStructure() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
           {/* Employee Picker */}
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className={`${selected ? "hidden lg:block" : ""} rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800`}>
             <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-700">
               <p className="text-sm font-semibold text-gray-700 dark:text-white">Select Employee</p>
               <CustomInput icon={HiSearch} placeholder="Search..." sizing="sm" className="mt-2"
                 value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <ul className="max-h-[65vh] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+            <ul className="divide-y divide-gray-100 overflow-y-auto dark:divide-gray-700 lg:max-h-[calc(100vh-15rem)]">
               {loadingEmps ? (
                 <li className="px-4 py-6 text-center text-sm text-gray-400">Loading…</li>
               ) : filtered.map((emp) => (
-                <li key={emp.id} onClick={() => selectEmployee(emp)}
+                <li key={emp.id} onClick={() => selectEmployee(emp)} role="button" tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectEmployee(emp); } }}
+                  aria-current={selected?.id === emp.id ? "true" : undefined}
                   className={`cursor-pointer px-4 py-3 transition-colors ${
                     selected?.id === emp.id ? "bg-purple-50 dark:bg-purple-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700"
                   }`}>
@@ -111,7 +116,7 @@ export default function SalaryStructure() {
           </div>
 
           {/* Component Panel */}
-          <div className="lg:col-span-2 rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className={`${selected ? "" : "hidden lg:block"} lg:col-span-2 rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800`}>
             {!selected ? (
               <div className="flex h-64 flex-col items-center justify-center gap-2 text-gray-400">
                 <HiCurrencyDollar className="h-10 w-10" />
@@ -119,8 +124,12 @@ export default function SalaryStructure() {
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700">
-                  <div>
+                <div className="flex flex-wrap items-end justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-gray-700">
+                  <div className="min-w-0">
+                    <button type="button" onClick={() => setSelected(null)}
+                      className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 lg:hidden">
+                      <HiArrowLeft className="h-4 w-4" /> All employees
+                    </button>
                     <p className="font-semibold text-gray-800 dark:text-white">
                       {displayName(selected)}
                     </p>
@@ -130,7 +139,7 @@ export default function SalaryStructure() {
                     <HiPlus className="mr-1.5 h-4 w-4" /> Assign Component
                   </CustomButton>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="table-viewport">
                   <CustomTable>
                     <CustomTableHead>
                       <CustomTableRow>

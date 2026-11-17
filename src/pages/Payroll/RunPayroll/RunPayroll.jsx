@@ -21,6 +21,7 @@ import {
   BULK_FIELDS, parseBulkCsv, applyBulkUpdates, countStructureChangesSince, countRevokedIncrements,
 } from "../../../services/payrollRunService";
 import { useCan } from "../../../auth/AuthContext";
+import { freshReads } from "../../../services/api";
 
 const statusSteps  = ["Draft", "Approved", "Paid"];
 const statusColor  = { Draft: "warning", Approved: "indigo", Paid: "success" };
@@ -119,18 +120,19 @@ export default function RunPayroll() {
     setLoading(true); setError("");
     setRun((cur) => (cur && cur.runMonth !== m ? null : cur));
     try {
-      const head = await openRun(m);
+      // the payroll sheet always shows live figures, never the 30-second read cache
+      const head = await freshReads(() => openRun(m));
       const r = Array.isArray(head) ? head[0] : head;
       // side by side, not one after another: each request costs about a second
       // before any data moves, so five in a row kept the screen blank for 8-9 s
-      const [details, changes, pending, should] = await Promise.all([
+      const [details, changes, pending, should] = await freshReads(() => Promise.all([
         r ? fetchRunDetails(r.id).then((d) => d || []) : [],
         r ? countStructureChangesSince(m).catch(() => 0) : 0,
         countRevokedIncrements(m).catch(() => 0),
         r?.periodFrom && r?.periodTo
           ? countExpectedForPeriod(String(r.periodFrom).slice(0, 10), String(r.periodTo).slice(0, 10)).catch(() => 0)
           : 0,
-      ]);
+      ]));
       if (seq !== loadSeq.current) return;   // another month was picked meanwhile
       setRun(r ?? null);
       setPFrom(r?.periodFrom ? String(r.periodFrom).slice(0, 10) : "");
@@ -267,7 +269,8 @@ export default function RunPayroll() {
     if (locked || !runIsCurrent) return;
     setBusy("Calculating…"); setError("");
     try {
-      const [emps, structures, loans, slabList, cfgRaw, incs, noPayLeave, periodEmps] = await Promise.all([
+      // live figures, never the 30-second read cache - a payroll is calculated from these
+      const [emps, structures, loans, slabList, cfgRaw, incs, noPayLeave, periodEmps] = await freshReads(() => Promise.all([
         fetchActiveEmployees(),
         fetchAllStructures(),
         fetchLoans(),
@@ -276,7 +279,7 @@ export default function RunPayroll() {
         fetchIncrementsForMonth(month),
         fetchNoPayDaysForMonth(month),
         fetchPeriodEmployees(pFrom || `${month}-01`, pTo || `${month}-31`),
-      ]);
+      ]));
       // employment inside the pay period — someone who joined or left partway
       // through only gets paid for the days they were actually employed
       const periodByEmp = {};
@@ -548,25 +551,83 @@ export default function RunPayroll() {
           </div>
         </div>
 
-        {/* Pay period — defaults to the whole month, change it for a different cycle */}
-        <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="pFrom" className="text-xs font-medium text-gray-500">Pay period from</label>
-            <CustomInput id="pFrom" type="date" value={pFrom} disabled={locked}
-              onChange={(e) => setPFrom(e.target.value)} className="w-40" />
+        {/* Workflow: where this payroll is, what to do next, and its pay period - one card,
+            so the sheet below gets the height */}
+        <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+            <ol className="flex items-center gap-1.5 sm:gap-2" aria-label="Payroll progress">
+              {statusSteps.map((step, idx) => (
+                <li key={step} className="flex items-center gap-1.5 sm:gap-2">
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                    idx < stepIndex   ? "bg-green-500 text-white" :
+                    idx === stepIndex ? "bg-purple-600 text-white ring-4 ring-purple-100 dark:ring-purple-900/50" :
+                                        "bg-gray-200 text-gray-400 dark:bg-gray-600"
+                  }`}>
+                    {idx < stepIndex ? <HiCheck className="h-4 w-4" /> : idx + 1}
+                  </span>
+                  <span className={`text-sm font-medium ${idx === stepIndex ? "text-purple-600 dark:text-purple-300" : "text-gray-400"}`}>{step}</span>
+                  {idx < statusSteps.length - 1 && <span className={`mx-0.5 h-0.5 w-4 sm:w-10 ${idx < stepIndex ? "bg-green-400" : "bg-gray-200 dark:bg-gray-600"}`} />}
+                </li>
+              ))}
+            </ol>
+            <div className="flex flex-wrap items-center gap-3">
+              <CustomButton perm="payroll.calculate" color="purple" disabled={!run || !!busy || locked}
+                onClick={() => (overrideCount > 0 ? setAskRebuild(true) : handleCalculate("keep"))}>
+                <HiPlay className="mr-2 h-4 w-4" /> {rows.length ? "Recalculate" : "Calculate"}
+              </CustomButton>
+              {status === "Draft" && rows.length > 0 && (
+                <CustomButton perm="payroll.approve" color="indigo" disabled={!!busy} onClick={() => changeStatus("Approved")}>
+                  <HiCheck className="mr-2 h-4 w-4" /> Approve Payroll
+                </CustomButton>
+              )}
+              {status === "Approved" && (
+                <>
+                  <CustomButton perm="payroll.approve" color="success" disabled={!!busy} onClick={() => changeStatus("Paid")}>
+                    <HiLockClosed className="mr-2 h-4 w-4" /> Lock &amp; Mark as Paid
+                  </CustomButton>
+                  <CustomButton perm="payroll.approve" color="gray" outline disabled={!!busy} onClick={() => changeStatus("Draft")}>
+                    <HiRefresh className="mr-2 h-4 w-4" /> Back to Draft
+                  </CustomButton>
+                </>
+              )}
+              {/* Hidden per the 20 Aug meeting: this sheet is the calculate view, not a
+                  report, so its columns did not match Reports and caused confusion.
+                  Kept in place rather than deleted — the decision may be revisited. */}
+              {false && (
+                <CustomButton color="gray" outline disabled={rows.length === 0} onClick={exportForEditing}>
+                  <HiDownload className="mr-2 h-4 w-4" /> Export for Excel
+                </CustomButton>
+              )}
+              <label className={`inline-flex cursor-pointer items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 ${locked || rows.length === 0 ? "pointer-events-none opacity-50" : ""}`}>
+                <HiUpload className="mr-2 h-4 w-4" /> Import from Excel
+                <input type="file" accept=".csv,text/csv" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; importEdited(f); }} />
+              </label>
+              {busy && <span className="text-sm text-gray-500">{busy}</span>}
+              {locked && <span className="text-sm text-gray-500">{viewOnly ? "View only — your role can't change the payroll." : "This payroll is locked and cannot be changed."}</span>}
+            </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="pTo" className="text-xs font-medium text-gray-500">to</label>
-            <CustomInput id="pTo" type="date" value={pTo} disabled={locked}
-              onChange={(e) => setPTo(e.target.value)} className="w-40" />
+
+          {/* Pay period - defaults to the whole month, change it for a different cycle */}
+          <div className="flex flex-wrap items-end gap-3 border-t border-gray-100 pt-4 dark:border-gray-700">
+            <div className="flex w-[calc(50%-0.375rem)] flex-col gap-1 sm:w-40">
+              <label htmlFor="pFrom" className="text-xs font-medium text-gray-500">Pay period from</label>
+              <CustomInput id="pFrom" type="date" value={pFrom} disabled={locked}
+                onChange={(e) => setPFrom(e.target.value)} />
+            </div>
+            <div className="flex w-[calc(50%-0.375rem)] flex-col gap-1 sm:w-40">
+              <label htmlFor="pTo" className="text-xs font-medium text-gray-500">to</label>
+              <CustomInput id="pTo" type="date" value={pTo} disabled={locked}
+                onChange={(e) => setPTo(e.target.value)} />
+            </div>
+            <CustomButton perm="payroll.calculate" color="gray" outline size="sm" disabled={!run || !!busy || locked} onClick={savePeriod}>
+              Save Period
+            </CustomButton>
+            <p className="min-w-[14rem] flex-1 text-xs text-gray-400">
+              Defaults to the full month. Anyone who joined or left inside the period is paid only for
+              the days they were employed — the unworked days are added to No Pay Days, which you can still change.
+            </p>
           </div>
-          <CustomButton perm="payroll.calculate" color="gray" outline size="sm" disabled={!run || !!busy || locked} onClick={savePeriod}>
-            Save Period
-          </CustomButton>
-          <p className="flex-1 text-xs text-gray-400">
-            Defaults to the full month. Anyone who joined or left inside the period is paid only for
-            the days they were employed — the unworked days are added to No Pay Days, which you can still change.
-          </p>
         </div>
 
         {error && (
@@ -575,66 +636,9 @@ export default function RunPayroll() {
           </div>
         )}
 
-        {/* Progress */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex items-center gap-2">
-            {statusSteps.map((step, idx) => (
-              <div key={step} className="flex items-center gap-2">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                  idx < stepIndex   ? "bg-green-500 text-white" :
-                  idx === stepIndex ? "bg-purple-600 text-white" :
-                                      "bg-gray-200 text-gray-400 dark:bg-gray-600"
-                }`}>
-                  {idx < stepIndex ? <HiCheck className="h-4 w-4" /> : idx + 1}
-                </div>
-                <span className={`text-sm font-medium ${idx === stepIndex ? "text-purple-600" : "text-gray-400"}`}>{step}</span>
-                {idx < statusSteps.length - 1 && <div className={`h-0.5 w-12 ${idx < stepIndex ? "bg-green-400" : "bg-gray-200 dark:bg-gray-600"}`} />}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-wrap items-center gap-3">
-          <CustomButton perm="payroll.calculate" color="purple" disabled={!run || !!busy || locked}
-            onClick={() => (overrideCount > 0 ? setAskRebuild(true) : handleCalculate("keep"))}>
-            <HiPlay className="mr-2 h-4 w-4" /> {rows.length ? "Recalculate" : "Calculate"}
-          </CustomButton>
-          {status === "Draft" && rows.length > 0 && (
-            <CustomButton perm="payroll.approve" color="indigo" disabled={!!busy} onClick={() => changeStatus("Approved")}>
-              <HiCheck className="mr-2 h-4 w-4" /> Approve Payroll
-            </CustomButton>
-          )}
-          {status === "Approved" && (
-            <>
-              <CustomButton perm="payroll.approve" color="success" disabled={!!busy} onClick={() => changeStatus("Paid")}>
-                <HiLockClosed className="mr-2 h-4 w-4" /> Lock &amp; Mark as Paid
-              </CustomButton>
-              <CustomButton perm="payroll.approve" color="gray" outline disabled={!!busy} onClick={() => changeStatus("Draft")}>
-                <HiRefresh className="mr-2 h-4 w-4" /> Back to Draft
-              </CustomButton>
-            </>
-          )}
-          {/* Hidden per the 20 Aug meeting: this sheet is the calculate view, not a
-              report, so its columns did not match Reports and caused confusion.
-              Kept in place rather than deleted — the decision may be revisited. */}
-          {false && (
-            <CustomButton color="gray" outline disabled={rows.length === 0} onClick={exportForEditing}>
-              <HiDownload className="mr-2 h-4 w-4" /> Export for Excel
-            </CustomButton>
-          )}
-          <label className={`inline-flex cursor-pointer items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 ${locked || rows.length === 0 ? "pointer-events-none opacity-50" : ""}`}>
-            <HiUpload className="mr-2 h-4 w-4" /> Import from Excel
-            <input type="file" accept=".csv,text/csv" className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; importEdited(f); }} />
-          </label>
-          {busy && <span className="text-sm text-gray-500">{busy}</span>}
-          {locked && <span className="text-sm text-gray-500">{viewOnly ? "View only — your role can't change the payroll." : "This payroll is locked and cannot be changed."}</span>}
-        </div>
-
         {askRebuild && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800">
+          <div className="fb-fade fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
+            <div className="fb-pop max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-6 shadow-2xl dark:bg-gray-800 sm:rounded-2xl">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Recalculate this payroll</h3>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
                 <span className="font-semibold">{overrideCount}</span> figure{overrideCount === 1 ? " is" : "s are"} typed
@@ -721,7 +725,7 @@ export default function RunPayroll() {
         {/* Table - the search sits right on top of it, where the eye already is */}
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-5 py-3 dark:border-gray-700">
-            <div className="w-72">
+            <div className="w-full sm:w-72">
               <CustomInput icon={HiSearch} value={query} onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search EPF number or name…" />
             </div>
@@ -731,7 +735,7 @@ export default function RunPayroll() {
               </span>
             )}
           </div>
-          <div className="overflow-x-auto">
+          <div className="table-viewport">
             <CustomTable hoverable className="text-sm">
               <CustomTableHead>
                 <CustomTableRow>

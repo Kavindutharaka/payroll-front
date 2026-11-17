@@ -127,7 +127,7 @@ export function EmployeeTable() {
 
       <div className="flex flex-wrap items-center gap-3">
         <CustomInput icon={HiSearch} placeholder="Search by name or ID..." value={search}
-          onChange={(e) => setSearch(e.target.value)} sizing="sm" className="w-64" />
+          onChange={(e) => setSearch(e.target.value)} sizing="sm" className="w-full sm:w-64" />
         <CustomSelect value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} sizing="sm">
           <option value="all">All Employees</option>
           <option value="active">Active Only</option>
@@ -154,7 +154,7 @@ export function EmployeeTable() {
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="overflow-x-auto">
+        <div className="table-viewport">
           <CustomTable hoverable>
             <CustomTableHead>
               <CustomTableRow>
@@ -246,7 +246,7 @@ export function EmployeeTable() {
             </CustomTableBody>
           </CustomTable>
         </div>
-        <div className="flex items-center justify-between border-t border-gray-200 px-5 py-3 dark:border-gray-700">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-5 py-3 dark:border-gray-700">
           <span className="text-sm text-gray-500 dark:text-gray-400">
             Showing <span className="font-semibold text-gray-700 dark:text-white">{filtered.length}</span> of{" "}
             <span className="font-semibold text-gray-700 dark:text-white">{employees.length}</span> employees

@@ -63,7 +63,7 @@ export default function BankAccounts() {
           </CustomButton>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <CustomInput icon={HiSearch} placeholder="Search by emp ID or account..." sizing="sm" className="w-64"
+          <CustomInput icon={HiSearch} placeholder="Search by emp ID or account..." sizing="sm" className="w-full sm:w-64"
             value={search} onChange={(e) => setSearch(e.target.value)} />
           <CustomSelect sizing="sm" value={filterEmp} onChange={(e) => setFilterEmp(e.target.value)}>
             <option value="all">All Employees</option>
@@ -71,7 +71,7 @@ export default function BankAccounts() {
           </CustomSelect>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="overflow-x-auto">
+          <div className="table-viewport">
             <CustomTable hoverable>
               <CustomTableHead>
                 <CustomTableRow>

@@ -31,3 +31,37 @@ code {
 .fb-pop  { animation: fb-pop .16s ease-out both; }
 .fb-fade { animation: fb-fade .16s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .fb-in, .fb-out, .fb-pop, .fb-fade { animation: none; } }
+
+/* Long lists scroll inside their own box: the headings stay put and the sideways
+   scrollbar is always on screen, instead of 230 rows further down the page. */
+.table-viewport { overflow: auto; overscroll-behavior-x: contain; }
+@media (min-width: 1024px) { .table-viewport { max-height: calc(100vh - 10rem); overscroll-behavior: contain; } }
+
+/* Scrollbars: thin and quiet everywhere, instead of the browser's thick grey bars */
+* { scrollbar-width: thin; scrollbar-color: rgb(209 213 219) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgb(209 213 219); border-radius: 9999px; border: 2px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: rgb(156 163 175); background-clip: content-box; }
+@media (prefers-color-scheme: dark) {
+  * { scrollbar-color: rgb(75 85 99) transparent; }
+  *::-webkit-scrollbar-thumb { background: rgb(75 85 99); background-clip: content-box; }
+  *::-webkit-scrollbar-thumb:hover { background: rgb(107 114 128); background-clip: content-box; }
+}
+/* the menu's scrollbar only shows while the pointer is over it */
+.nav-scroll { scrollbar-color: transparent transparent; }
+.nav-scroll:hover { scrollbar-color: rgb(209 213 219) transparent; }
+.nav-scroll::-webkit-scrollbar-thumb { background: transparent; }
+.nav-scroll:hover::-webkit-scrollbar-thumb { background: rgb(209 213 219); background-clip: content-box; }
+@media (prefers-color-scheme: dark) {
+  .nav-scroll:hover { scrollbar-color: rgb(75 85 99) transparent; }
+  .nav-scroll:hover::-webkit-scrollbar-thumb { background: rgb(75 85 99); background-clip: content-box; }
+}
+/* A "Loading…" / "Nothing here" line stays in view on a table wider than the screen */
+.table-message { position: sticky; left: 1rem; width: min(100%, calc(100vw - 4rem)); text-align: center; }
+@media (min-width: 1024px) { .table-message { width: min(100%, calc(100vw - 21rem)); } }
+/* Skeleton shimmer while a card's figures load */
+@keyframes sk { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
+.skeleton { border-radius: .375rem; background: linear-gradient(90deg, rgb(243 244 246) 0, rgb(229 231 235) 50%, rgb(243 244 246) 100%); background-size: 200px 100%; background-repeat: no-repeat; background-color: rgb(243 244 246); animation: sk 1.2s ease-in-out infinite; }
+@media (prefers-color-scheme: dark) { .skeleton { background-image: linear-gradient(90deg, rgb(55 65 81) 0, rgb(75 85 99) 50%, rgb(55 65 81) 100%); background-color: rgb(55 65 81); } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }

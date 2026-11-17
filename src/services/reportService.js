@@ -58,7 +58,13 @@ export const fetchDashboardStats = () =>
       (SELECT COUNT(*) FROM dbo.payroll_leave    WHERE status = 'Pending')                      AS pendingLeave,
       (SELECT COUNT(*) FROM dbo.payroll_loan     WHERE status = 'Active')                       AS activeLoans,
       (SELECT ISNULL(SUM(remaining), 0) FROM dbo.payroll_loan WHERE status = 'Active')          AS loanOutstanding,
-      (SELECT COUNT(*) FROM dbo.payroll_salary_component WHERE status <> 'Deleted')             AS componentCount
+      (SELECT COUNT(*) FROM dbo.payroll_salary_component WHERE status <> 'Deleted')             AS componentCount,
+      -- staff on contract whose contract has ended or ends within 30 days
+      (SELECT COUNT(*) FROM dbo.payroll_employee
+        WHERE status <> 'Deleted' AND employmentType = 'Permanent Staff on Contract'
+          AND (dateOfResignation IS NULL OR dateOfResignation > GETDATE())
+          AND contractEndDate IS NOT NULL
+          AND contractEndDate <= DATEADD(DAY, 30, CAST(GETDATE() AS date)))                     AS contractsDue
   `);
 
 export const fetchRunSummary = (limit = 6) =>

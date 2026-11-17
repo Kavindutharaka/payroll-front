@@ -100,8 +100,8 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
+    <div className="fb-fade fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="fb-pop relative w-full max-w-2xl max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:max-h-[90vh] sm:rounded-2xl bg-white shadow-2xl dark:bg-gray-800">
 
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-purple-600 px-6 py-4">
           <div>
@@ -110,7 +110,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
               {isEdit ? `Editing ${initialData.emp_id}` : "Fill in the details to register a new employee"}
             </p>
           </div>
-          <button type="button" onClick={closeForm}
+          <button type="button" onClick={closeForm} data-modal-close aria-label="Close"
             className="rounded-lg p-1.5 text-purple-200 transition-colors hover:bg-purple-500 hover:text-white">
             <HiX className="h-5 w-5" />
           </button>
@@ -170,7 +170,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
               </div>
               {/* The registered NIC and, beside it, a newer one kept for reference only -
                   EPF, ETF, the bank and every report keep using the registered NIC. */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="nic">NIC / Passport No</CustomLabel>
                   <CustomInput id="nic" value={form.nic} onChange={set("nic")} placeholder="e.g. 123456789V or N1234567" required />
@@ -206,7 +206,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
           <section>
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-widest text-purple-500">Employment Details</h4>
             <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="empId">Employee ID</CustomLabel>
                   <CustomInput id="empId" type="number" value={form.emp_id} onChange={set("emp_id")} placeholder="e.g. 001" required />
@@ -217,7 +217,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="dateOfJoining">Date of Joining</CustomLabel>
                   <CustomInput id="dateOfJoining" type="date" value={form.dateOfJoining?.slice(0, 10) ?? ""} onChange={set("dateOfJoining")} required />
@@ -228,7 +228,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="employmentType">Employment Type</CustomLabel>
                   <CustomSelect id="employmentType" value={form.employmentType} onChange={set("employmentType")} required>
@@ -252,7 +252,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
               {/* only for staff kept on under a contract - feeds the
                   Permanent Staff on Contract report */}
               {form.employmentType === "Permanent Staff on Contract" && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
                     <CustomLabel htmlFor="contractStartDate">Contract Start Date</CustomLabel>
                     <CustomInput id="contractStartDate" type="date" value={form.contractStartDate?.slice(0, 10) ?? ""}
@@ -267,7 +267,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="emergencyContactNo">Emergency Contact No</CustomLabel>
                   <CustomInput id="emergencyContactNo" value={form.emergencyContactNo} onChange={set("emergencyContactNo")}
@@ -326,7 +326,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
           <section>
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-widest text-purple-500">Salary & Tax</h4>
             <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="basicSalary">Basic Salary (Rs.)</CustomLabel>
                   <CustomInput id="basicSalary" type="number" value={form.basicSalary} onChange={set("basicSalary")} placeholder="e.g. 75000" required />
@@ -378,7 +378,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
           <section>
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-widest text-purple-500">Payment</h4>
             <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <CustomLabel htmlFor="paymentMode">Payment Mode</CustomLabel>
                   <CustomSelect id="paymentMode" value={form.paymentMode} onChange={set("paymentMode")} required>
@@ -399,7 +399,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
               {/* Bank details only matter for a bank transfer */}
               {form.paymentMode === "Bank" && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
                       <CustomLabel htmlFor="accountName">Account Name</CustomLabel>
                       <CustomInput id="accountName" value={form.accountName} onChange={set("accountName")} placeholder="e.g. S.R Fernando" required />
@@ -409,7 +409,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
                       <CustomInput id="accountNum" value={form.accountNum} onChange={set("accountNum")} placeholder="e.g. 1234567890" required />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
                       <CustomLabel htmlFor="bank">Bank</CustomLabel>
                       <CustomInput id="bank" value={form.bank} onChange={set("bank")} placeholder="e.g. Sampath Bank" required />
@@ -419,7 +419,7 @@ export default function EmployeeForm({ closeForm, initialData, onSave, saving = 
                       <CustomInput id="branch" value={form.branch} onChange={set("branch")} placeholder="e.g. Narahenpita" required />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
                       <CustomLabel htmlFor="bankCode">Bank Code</CustomLabel>
                       <CustomInput id="bankCode" value={form.bankCode} onChange={set("bankCode")} placeholder="e.g. 7278" required />
