@@ -913,7 +913,8 @@ export default function RunPayroll() {
                 </label>
               </div>
               {pageCount > 1 && (
-              <div className="flex items-center gap-1">
+              // wraps onto a second line on a phone rather than widening the page
+              <div className="flex flex-wrap items-center gap-1">
                 <button type="button" disabled={current === 1} onClick={() => setPage(current - 1)}
                   className="rounded-lg border border-gray-300 px-3 py-1.5 text-gray-600 disabled:opacity-40 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
                   Previous

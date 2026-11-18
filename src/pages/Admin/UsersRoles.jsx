@@ -57,15 +57,16 @@ function Badge({ tone = "gray", children, title }) {
 
 function Modal({ title, subtitle, onClose, children, footer, wide }) {
   useEffect(() => {
-    const esc = (e) => { if (e.key === "Escape") onClose(); };
+    // a confirmation on top of this dialog gets the Escape, not the dialog
+    const esc = (e) => { if (e.key === "Escape" && !document.querySelector('[class*="z-[90]"], [class*="z-[95]"]')) onClose(); };
     window.addEventListener("keydown", esc);
     return () => window.removeEventListener("keydown", esc);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-      <div className="fb-fade absolute inset-0 bg-gray-900/40" onClick={onClose} />
+    <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:p-4">
+      <div className="fb-fade absolute inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-labelledby="modal-title"
-        className={`fb-pop relative flex max-h-[90vh] w-full flex-col rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800 ${wide ? "max-w-2xl" : "max-w-md"}`}>
+        className={`fb-pop relative flex max-h-[92dvh] w-full flex-col rounded-t-2xl sm:max-h-[90vh] sm:rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800 ${wide ? "max-w-2xl" : "max-w-md"}`}>
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4 dark:border-gray-700">
           <div>
             <h2 id="modal-title" className="text-base font-semibold text-gray-900 dark:text-white">{title}</h2>
@@ -76,7 +77,7 @@ function Modal({ title, subtitle, onClose, children, footer, wide }) {
           </button>
         </div>
         <div className="overflow-y-auto px-6 py-5">{children}</div>
-        {footer && <div className="flex items-center justify-between gap-2 rounded-b-xl border-t border-gray-100 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-800/60">{footer}</div>}
+        {footer && <div className="flex items-center justify-between gap-2 sm:rounded-b-2xl border-t border-gray-100 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-800/60">{footer}</div>}
       </div>
     </div>
   );
@@ -221,7 +222,7 @@ function UsersTab({ roles, onRolesStale }) {
       ) : shown.length === 0 ? (
         <EmptyState icon={HiUserGroup} title={query ? "No one matches that search" : "No users yet"} />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-gray-100 text-xs font-medium uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:text-gray-400">
               <tr>

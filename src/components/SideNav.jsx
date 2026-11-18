@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { canOpen } from "../auth/access";
 import { ChangePasswordModal } from "../pages/Auth/ChangePassword";
+import { THEMES, useTheme } from "../ui/theme";
 import {
   HiChartPie,
   HiUsers,
@@ -30,6 +31,9 @@ import {
   HiShieldCheck,
   HiKey,
   HiLogout,
+  HiSun,
+  HiMoon,
+  HiDesktopComputer,
   HiSelector,
   HiX,
 } from "react-icons/hi";
@@ -138,6 +142,7 @@ function AccountMenu() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [changing, setChanging] = useState(false);
+  const [theme, setTheme] = useTheme();
   const ref = useRef(null);
 
   useEffect(() => {
@@ -162,8 +167,25 @@ function AccountMenu() {
             className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
             <HiKey className="h-4 w-4 text-gray-400" /> Change password
           </button>
+          {/* appearance: dark by default, remembered on this PC */}
+          <div className="border-t border-gray-100 px-3 py-2 dark:border-gray-700">
+            <p className="pb-1.5 text-xs text-gray-500 dark:text-gray-400">Appearance</p>
+            <div className="grid grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-700" role="group" aria-label="Appearance">
+              {THEMES.map(([value, label]) => {
+                const Icon = THEME_ICON[value];
+                return (
+                  <button key={value} type="button" onClick={() => setTheme(value)} aria-pressed={theme === value}
+                    className={`flex items-center justify-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium ${theme === value
+                      ? "bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-white"
+                      : "text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"}`}>
+                    <Icon className="h-3.5 w-3.5" /> {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <button role="menuitem" type="button" onClick={logout}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
+            className="flex w-full items-center gap-2.5 border-t border-gray-100 px-3 py-2 dark:border-gray-700 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
             <HiLogout className="h-4 w-4 text-gray-400" /> Sign out
           </button>
         </div>
@@ -183,6 +205,8 @@ function AccountMenu() {
     </div>
   );
 }
+
+const THEME_ICON = { light: HiSun, dark: HiMoon, system: HiDesktopComputer };
 
 // Which sections are open survives moving between screens (each screen draws its own
 // sidebar); the section holding the current screen is always opened.

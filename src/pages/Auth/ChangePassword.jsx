@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { HiCheck } from "react-icons/hi";
+import { HiCheck, HiX } from "react-icons/hi";
+import Portal from "../../ui/Portal";
 import { useAuth } from "../../auth/AuthContext";
 import { notify } from "../../ui/feedback";
 import { AuthShell, Field, PasswordInput, SubmitButton, FormError } from "./AuthShell";
@@ -98,14 +99,20 @@ export default function ForcedPasswordChange() {
 /** From the account menu. */
 export function ChangePasswordModal({ onClose }) {
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
-      <div className="fb-fade absolute inset-0 bg-gray-900/40" onClick={onClose} />
+    <Portal>
+    <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:p-4">
+      <div className="fb-fade absolute inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-labelledby="cp-title"
-        className="fb-pop relative w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-800">
-        <h2 id="cp-title" className="mb-1 text-lg font-semibold text-gray-900 dark:text-white">Change password</h2>
+        className="fb-pop relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-800 sm:rounded-2xl">
+        <button type="button" onClick={onClose} data-modal-close aria-label="Close"
+          className="absolute right-4 top-4 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200">
+          <HiX className="h-5 w-5" />
+        </button>
+        <h2 id="cp-title" className="mb-1 pr-8 text-lg font-semibold text-gray-900 dark:text-white">Change password</h2>
         <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">Other devices signed in to your account will be signed out.</p>
         <ChangePasswordForm onDone={onClose} onCancel={onClose} />
       </div>
     </div>
+    </Portal>
   );
 }

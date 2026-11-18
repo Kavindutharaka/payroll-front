@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#111827" />
     <meta
       name="description"
       content="Web site created using create-react-app"
@@ -15,6 +15,17 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!-- light / dark: the person's choice (account menu), dark until they choose. Runs before
+         the page is drawn so it never flashes the wrong colours. Kept in step with src/ui/theme.js -->
+    <script>
+      (function () {
+        var t = "dark";
+        try { t = localStorage.getItem("ais.theme") || "dark"; } catch (e) {}
+        var dark = t === "system" ? window.matchMedia("(prefers-color-scheme: dark)").matches : t !== "light";
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      })();
+    </script>
     <!-- the API address and other settings that can change on the server without a rebuild -->
     <script src="%PUBLIC_URL%/config.js"></script>
     <!--

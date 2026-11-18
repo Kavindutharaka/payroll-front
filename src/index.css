@@ -12,9 +12,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: dark) {
-  body { background-color: #111827; }
-}
+.dark body { background-color: #111827; }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
@@ -43,36 +41,30 @@ code {
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb { background: rgb(209 213 219); border-radius: 9999px; border: 2px solid transparent; background-clip: content-box; }
 *::-webkit-scrollbar-thumb:hover { background: rgb(156 163 175); background-clip: content-box; }
-@media (prefers-color-scheme: dark) {
-  * { scrollbar-color: rgb(75 85 99) transparent; }
-  *::-webkit-scrollbar-thumb { background: rgb(75 85 99); background-clip: content-box; }
-  *::-webkit-scrollbar-thumb:hover { background: rgb(107 114 128); background-clip: content-box; }
-}
+.dark * { scrollbar-color: rgb(75 85 99) transparent; }
+.dark *::-webkit-scrollbar-thumb { background: rgb(75 85 99); background-clip: content-box; }
+.dark *::-webkit-scrollbar-thumb:hover { background: rgb(107 114 128); background-clip: content-box; }
 /* the menu's scrollbar only shows while the pointer is over it */
 .nav-scroll { scrollbar-color: transparent transparent; }
 .nav-scroll:hover { scrollbar-color: rgb(209 213 219) transparent; }
 .nav-scroll::-webkit-scrollbar-thumb { background: transparent; }
 .nav-scroll:hover::-webkit-scrollbar-thumb { background: rgb(209 213 219); background-clip: content-box; }
-@media (prefers-color-scheme: dark) {
-  .nav-scroll:hover { scrollbar-color: rgb(75 85 99) transparent; }
-  .nav-scroll:hover::-webkit-scrollbar-thumb { background: rgb(75 85 99); background-clip: content-box; }
-}
+.dark .nav-scroll:hover { scrollbar-color: rgb(75 85 99) transparent; }
+.dark .nav-scroll:hover::-webkit-scrollbar-thumb { background: rgb(75 85 99); background-clip: content-box; }
 /* A "Loading…" / "Nothing here" line stays in view on a table wider than the screen */
 .table-message { position: sticky; left: 1rem; width: min(100%, calc(100vw - 4rem)); text-align: center; }
 @media (min-width: 1024px) { .table-message { width: min(100%, calc(100vw - 21rem)); } }
 /* Skeleton shimmer while a card's figures load */
 @keyframes sk { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
 .skeleton { border-radius: .375rem; background: linear-gradient(90deg, rgb(243 244 246) 0, rgb(229 231 235) 50%, rgb(243 244 246) 100%); background-size: 200px 100%; background-repeat: no-repeat; background-color: rgb(243 244 246); animation: sk 1.2s ease-in-out infinite; }
-@media (prefers-color-scheme: dark) { .skeleton { background-image: linear-gradient(90deg, rgb(55 65 81) 0, rgb(75 85 99) 50%, rgb(55 65 81) 100%); background-color: rgb(55 65 81); } }
+.dark .skeleton { background-image: linear-gradient(90deg, rgb(55 65 81) 0, rgb(75 85 99) 50%, rgb(55 65 81) 100%); background-color: rgb(55 65 81); }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
 
 /* Pinned columns: a soft edge shows there is more to scroll to */
 .pin-edge-r { box-shadow: inset -1px 0 0 rgb(229 231 235), 4px 0 6px -4px rgb(0 0 0 / .12); }
 .pin-edge-l { box-shadow: inset 1px 0 0 rgb(229 231 235), -4px 0 6px -4px rgb(0 0 0 / .12); }
-@media (prefers-color-scheme: dark) {
-  .pin-edge-r { box-shadow: inset -1px 0 0 rgb(55 65 81), 4px 0 6px -4px rgb(0 0 0 / .5); }
-  .pin-edge-l { box-shadow: inset 1px 0 0 rgb(55 65 81), -4px 0 6px -4px rgb(0 0 0 / .5); }
-}
+.dark .pin-edge-r { box-shadow: inset -1px 0 0 rgb(55 65 81), 4px 0 6px -4px rgb(0 0 0 / .5); }
+.dark .pin-edge-l { box-shadow: inset 1px 0 0 rgb(55 65 81), -4px 0 6px -4px rgb(0 0 0 / .5); }
 /* Record panel slides in from the right */
 @keyframes panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .panel-in { animation: panel-in .2s ease-out both; }

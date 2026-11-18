@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { HiViewBoards, HiX, HiCheck, HiChevronRight, HiPencil, HiTrash } from "react-icons/hi";
 import { LoadingLine } from "../components/CustomTable";
 import { CustomButton } from "../components/FormFields";
+import Portal from "./Portal";
 import { tableSettings } from "./tableConfig";
 
 /* One list component for the whole app. What it does is switched in ui/tableConfig.js.
@@ -233,6 +234,7 @@ function DetailPanel({ row, columns, detail = {}, actions, onClose }) {
     ...(detail.extra || []).map((x, i) => ({ key: `x${i}`, ...x })),
   ];
   return (
+    <Portal>
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Record details">
       <div className="fb-fade absolute inset-0 bg-gray-900/40" onClick={onClose} />
       <aside className="panel-in absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-white shadow-2xl dark:bg-gray-800">
@@ -263,6 +265,7 @@ function DetailPanel({ row, columns, detail = {}, actions, onClose }) {
         )}
       </aside>
     </div>
+    </Portal>
   );
 }
 
