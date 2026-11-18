@@ -4,7 +4,7 @@ import Layout from "../../../components/Layout";
 import { HiPlus, HiCheck, HiX, HiSearch } from "react-icons/hi";
 import LeaveApplyForm from "./LeaveApplyForm";
 import { CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
-import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
+import DataTable from "../../../ui/DataTable";
 import { fetchLeaves, createLeave, updateLeaveStatus } from "../../../services/leaveService";
 
 const statusColor = { Pending: "warning", Approved: "success", Rejected: "failure" };
@@ -18,7 +18,7 @@ export default function LeaveTracking() {
 
   const load = async () => {
     setLoading(true);
-    try { setRecords(Array.isArray(await fetchLeaves()) ? await fetchLeaves() : []); }
+    try { const data = await fetchLeaves(); setRecords(Array.isArray(data) ? data : []); }
     catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -36,11 +36,31 @@ export default function LeaveTracking() {
   };
 
   const filtered = records.filter((r) => {
-    const name = `${r.emp_id}`.toLowerCase();
-    const matchSearch = name.includes(search.toLowerCase());
+    const q = search.trim().toLowerCase();
+    // a number is an EPF number, matched whole; anything else searches the name
+    const matchSearch = !q || (/^\d+$/.test(q) ? String(r.emp_id) === q : String(r.empName || "").toLowerCase().includes(q));
     const matchStatus = filterStatus === "all" || r.status === filterStatus;
     return matchSearch && matchStatus;
   });
+
+  const day = (v) => (v ? String(v).slice(0, 10) : "—");
+  const columns = [
+    { key: "employee", label: "Employee", always: true, card: "title",
+      render: (r) => (
+        <div className="min-w-[11rem]">
+          <div className="font-medium text-gray-800 dark:text-gray-100">{r.empName || "—"}</div>
+          <div className="font-mono text-xs text-purple-600 dark:text-purple-400">EPF {r.emp_id}</div>
+        </div>
+      ) },
+    { key: "type", label: "Leave Type", card: "subtitle", render: (r) => r.leaveType || "—" },
+    { key: "from", label: "From", card: true, render: (r) => day(r.dateFrom) },
+    { key: "to", label: "To", card: true, render: (r) => day(r.dateTo) },
+    { key: "days", label: "Days", align: "right", render: (r) => `${r.days} day${Number(r.days) === 1 ? "" : "s"}` },
+    { key: "noPay", label: "No-Pay",
+      render: (r) => <StatusBadge color={r.noPayDeducted ? "failure" : "gray"} className="w-fit text-xs">{r.noPayDeducted ? "Yes" : "No"}</StatusBadge> },
+    { key: "status", label: "Status", card: "badge",
+      render: (r) => <StatusBadge color={statusColor[r.status] ?? "gray"} className="w-fit text-xs">{r.status}</StatusBadge> },
+  ];
 
   return (
     <Layout>
@@ -54,66 +74,48 @@ export default function LeaveTracking() {
             <HiPlus className="mr-2 h-4 w-4" /> Apply Leave
           </CustomButton>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <CustomInput icon={HiSearch} placeholder="Search by emp ID..." sizing="sm" className="w-full sm:w-64"
-            value={search} onChange={(e) => setSearch(e.target.value)} />
-          <CustomSelect sizing="sm" value={filterStatus} onChange={(e) => setFilter(e.target.value)}>
-            <option value="all">All Status</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-          </CustomSelect>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="table-viewport">
-            <CustomTable hoverable>
-              <CustomTableHead>
-                <CustomTableRow>
-                  <CustomTableHeadCell>#</CustomTableHeadCell>
-                  <CustomTableHeadCell>Employee ID</CustomTableHeadCell>
-                  <CustomTableHeadCell>Leave Type</CustomTableHeadCell>
-                  <CustomTableHeadCell>From</CustomTableHeadCell>
-                  <CustomTableHeadCell>To</CustomTableHeadCell>
-                  <CustomTableHeadCell>Days</CustomTableHeadCell>
-                  <CustomTableHeadCell>No-Pay</CustomTableHeadCell>
-                  <CustomTableHeadCell>Status</CustomTableHeadCell>
-                  <CustomTableHeadCell className="text-center">Actions</CustomTableHeadCell>
-                </CustomTableRow>
-              </CustomTableHead>
-              <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {loading ? (
-                  <CustomTableRow><CustomTableCell colSpan={9} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
-                ) : filtered.map((r, idx) => (
-                  <CustomTableRow key={r.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                    <CustomTableCell className="text-sm text-gray-400">{idx + 1}</CustomTableCell>
-                    <CustomTableCell className="font-mono text-sm text-purple-500">{r.emp_id}</CustomTableCell>
-                    <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{r.leaveType}</CustomTableCell>
-                    <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{r.dateFrom}</CustomTableCell>
-                    <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{r.dateTo}</CustomTableCell>
-                    <CustomTableCell><StatusBadge color="indigo" className="w-fit text-xs">{r.days} day{r.days > 1 ? "s" : ""}</StatusBadge></CustomTableCell>
-                    <CustomTableCell><StatusBadge color={r.noPayDeducted ? "failure" : "gray"} className="w-fit text-xs">{r.noPayDeducted ? "Yes" : "No"}</StatusBadge></CustomTableCell>
-                    <CustomTableCell><StatusBadge color={statusColor[r.status]} className="w-fit text-xs">{r.status}</StatusBadge></CustomTableCell>
-                    <CustomTableCell>
-                      {r.status === "Pending" ? (
-                        <div className="flex justify-center gap-2">
-                          <CustomButton perm="leave.approve" size="xs" color="success" pill title="Approve" onClick={() => handleStatus(r.id, "Approved")}>
-                            <HiCheck className="h-3.5 w-3.5" />
-                          </CustomButton>
-                          <CustomButton perm="leave.approve" size="xs" color="failure" pill title="Reject" onClick={() => handleStatus(r.id, "Rejected")}>
-                            <HiX className="h-3.5 w-3.5" />
-                          </CustomButton>
-                        </div>
-                      ) : <p className="text-center text-xs text-gray-400">—</p>}
-                    </CustomTableCell>
-                  </CustomTableRow>
-                ))}
-                {!loading && filtered.length === 0 && (
-                  <CustomTableRow><CustomTableCell colSpan={9} className="py-8 text-center text-sm text-gray-400">No leave records found.</CustomTableCell></CustomTableRow>
-                )}
-              </CustomTableBody>
-            </CustomTable>
-          </div>
-        </div>
+        <DataTable
+          id="leave"
+          columns={columns}
+          rows={filtered}
+          loading={loading}
+          empty={records.length ? "No leave matches this search." : "No leave records yet."}
+          toolbar={(
+            <>
+              <CustomInput icon={HiSearch} placeholder="Search by EPF number or name" sizing="sm" className="w-full sm:w-64"
+                value={search} onChange={(e) => setSearch(e.target.value)} />
+              <CustomSelect sizing="sm" value={filterStatus} onChange={(e) => setFilter(e.target.value)}>
+                <option value="all">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+              </CustomSelect>
+            </>
+          )}
+          actions={(r, { inPanel } = {}) => (r.status === "Pending" ? (
+            <>
+              <CustomButton perm="leave.approve" size="xs" color="success" pill={!inPanel} title="Approve" onClick={() => handleStatus(r.id, "Approved")}>
+                <HiCheck className="h-3.5 w-3.5" />{inPanel && <span className="ml-1.5">Approve</span>}
+              </CustomButton>
+              <CustomButton perm="leave.approve" size="xs" color="failure" pill={!inPanel} title="Reject" onClick={() => handleStatus(r.id, "Rejected")}>
+                <HiX className="h-3.5 w-3.5" />{inPanel && <span className="ml-1.5">Reject</span>}
+              </CustomButton>
+            </>
+          ) : null)}
+          detail={{
+            title: (r) => r.empName || `EPF ${r.emp_id}`,
+            subtitle: (r) => `EPF ${r.emp_id} · ${r.leaveType || "Leave"}`,
+            extra: [
+              { label: "Reason", render: (r) => r.reason || "—" },
+            ],
+          }}
+          footer={(
+            <span>
+              Showing <span className="font-semibold text-gray-700 dark:text-white">{filtered.length}</span> of{" "}
+              <span className="font-semibold text-gray-700 dark:text-white">{records.length}</span> leave records
+            </span>
+          )}
+        />
       </div>
       {showForm && <LeaveApplyForm closeForm={() => setShowForm(false)} onSave={handleSave} />}
     </Layout>

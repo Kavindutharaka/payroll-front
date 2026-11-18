@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { StatusBadge } from "../../../components/StatusBadge";
 import Layout from "../../../components/Layout";
-import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
+import { HiPlus } from "react-icons/hi";
 import StandingOrderForm from "./StandingOrderForm";
-import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
+import DataTable, { RowActions } from "../../../ui/DataTable";
 import { CustomButton } from "../../../components/FormFields";
 import { fetchStandingOrders, createStandingOrder, updateStandingOrder, deleteStandingOrder } from "../../../services/standingOrderService";
 import { notify, confirmDialog } from "../../../ui/feedback";
@@ -16,7 +16,7 @@ export default function StandingOrders() {
 
   const load = async () => {
     setLoading(true);
-    try { setOrders(Array.isArray(await fetchStandingOrders()) ? await fetchStandingOrders() : []); }
+    try { const data = await fetchStandingOrders(); setOrders(Array.isArray(data) ? data : []); }
     catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -36,6 +36,24 @@ export default function StandingOrders() {
     try { await deleteStandingOrder(id); notify.success("Standing order deleted."); load(); } catch (err) { console.error(err); notify.error(err.userMessage || "That didn't work. Please try again."); }
   };
 
+  const columns = [
+    { key: "employee", label: "Employee", always: true, card: "title",
+      render: (so) => (
+        <div className="min-w-[11rem]">
+          <div className="font-medium text-gray-800 dark:text-gray-100">{so.empName || "—"}</div>
+          <div className="font-mono text-xs text-purple-600 dark:text-purple-400">EPF {so.emp_id}</div>
+        </div>
+      ) },
+    { key: "description", label: "Description", card: "subtitle", render: (so) => so.description || "—" },
+    { key: "amount", label: "Amount / Rate", align: "right", card: true,
+      render: (so) => <span className="font-semibold">{so.type === "Fixed" ? `Rs. ${Number(so.amount).toLocaleString()}` : `${so.amount}%`}</span> },
+    { key: "type", label: "Type",
+      render: (so) => <StatusBadge color={so.type === "Fixed" ? "indigo" : "purple"} className="w-fit text-xs">{so.type}</StatusBadge> },
+    { key: "from", label: "Effective From", card: true, render: (so) => (so.effectiveFrom ? String(so.effectiveFrom).slice(0, 10) : "—") },
+    { key: "status", label: "Status", card: "badge",
+      render: (so) => <StatusBadge color={so.status === "Active" ? "success" : "gray"} className="w-fit text-xs">{so.status}</StatusBadge> },
+  ];
+
   return (
     <Layout>
       <div className="flex flex-col gap-6">
@@ -48,52 +66,22 @@ export default function StandingOrders() {
             <HiPlus className="mr-2 h-4 w-4" /> Create Standing Order
           </CustomButton>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="table-viewport">
-            <CustomTable hoverable>
-              <CustomTableHead>
-                <CustomTableRow>
-                  <CustomTableHeadCell>Employee ID</CustomTableHeadCell>
-                  <CustomTableHeadCell>Description</CustomTableHeadCell>
-                  <CustomTableHeadCell>Amount / Rate</CustomTableHeadCell>
-                  <CustomTableHeadCell>Type</CustomTableHeadCell>
-                  <CustomTableHeadCell>Effective From</CustomTableHeadCell>
-                  <CustomTableHeadCell>Status</CustomTableHeadCell>
-                  <CustomTableHeadCell className="text-center">Actions</CustomTableHeadCell>
-                </CustomTableRow>
-              </CustomTableHead>
-              <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {loading ? (
-                  <CustomTableRow><CustomTableCell colSpan={7} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
-                ) : orders.map((so) => (
-                  <CustomTableRow key={so.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                    <CustomTableCell className="font-mono text-sm text-purple-500">{so.emp_id}</CustomTableCell>
-                    <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{so.description}</CustomTableCell>
-                    <CustomTableCell className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      {so.type === "Fixed" ? `Rs. ${Number(so.amount).toLocaleString()}` : `${so.amount}%`}
-                    </CustomTableCell>
-                    <CustomTableCell><StatusBadge color={so.type === "Fixed" ? "indigo" : "purple"} className="w-fit text-xs">{so.type}</StatusBadge></CustomTableCell>
-                    <CustomTableCell className="text-sm text-gray-500">{so.effectiveFrom}</CustomTableCell>
-                    <CustomTableCell><StatusBadge color="success" className="w-fit text-xs">{so.status}</StatusBadge></CustomTableCell>
-                    <CustomTableCell>
-                      <div className="flex justify-center gap-2">
-                        <CustomButton perm="payment.edit" size="xs" color="blue" outline pill onClick={() => { setEditData(so); setShowForm(true); }}>
-                          <HiPencil className="h-3.5 w-3.5" />
-                        </CustomButton>
-                        <CustomButton perm="payment.delete" size="xs" color="failure" outline pill onClick={() => handleDelete(so.id)}>
-                          <HiTrash className="h-3.5 w-3.5" />
-                        </CustomButton>
-                      </div>
-                    </CustomTableCell>
-                  </CustomTableRow>
-                ))}
-                {!loading && orders.length === 0 && (
-                  <CustomTableRow><CustomTableCell colSpan={7} className="py-8 text-center text-sm text-gray-400">No standing orders found.</CustomTableCell></CustomTableRow>
-                )}
-              </CustomTableBody>
-            </CustomTable>
-          </div>
-        </div>
+        <DataTable
+          id="standingOrders"
+          columns={columns}
+          rows={orders}
+          loading={loading}
+          empty="No standing orders yet."
+          actions={(so, { inPanel } = {}) => (
+            <RowActions inPanel={inPanel} editPerm="payment.edit" deletePerm="payment.delete"
+              onEdit={() => { setEditData(so); setShowForm(true); }} onDelete={() => handleDelete(so.id)} />
+          )}
+          detail={{
+            title: (so) => so.empName || `EPF ${so.emp_id}`,
+            subtitle: (so) => `EPF ${so.emp_id}`,
+          }}
+          footer={<span><span className="font-semibold text-gray-700 dark:text-white">{orders.length}</span> standing orders</span>}
+        />
       </div>
       {showForm && <StandingOrderForm closeForm={() => { setShowForm(false); setEditData(null); }} initialData={editData} onSave={handleSave} />}
     </Layout>

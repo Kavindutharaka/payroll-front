@@ -4,7 +4,14 @@ const TABLE = 'dbo.payroll_standing_order';
 const SP    = 'dbo.payroll_standing_order_sp';
 
 export const fetchStandingOrders = () =>
-  execSQL(`SELECT * FROM ${TABLE} WHERE status != 'Deleted' ORDER BY id DESC`);
+  execSQL(`
+    SELECT o.*,
+           LTRIM(RTRIM(ISNULL(e.initial,'') + ' ' + ISNULL(e.firstName,'') + ' ' + ISNULL(e.surName,''))) AS empName
+    FROM ${TABLE} o
+    LEFT JOIN dbo.payroll_employee e ON e.emp_id = o.emp_id
+    WHERE o.status != 'Deleted'
+    ORDER BY o.id DESC
+  `);
 
 export const createStandingOrder = (d) =>
   execSQL(

@@ -2,9 +2,13 @@ import axios from 'axios';
 import { notify } from '../ui/feedback';
 
 /* Every request goes to the payroll API (backend/PayrollApi), which checks who is signed in
- * and what their role allows before anything reaches the database. Set the address with
- * REACT_APP_API_BASE in .env.development / .env.production. */
-export const API_BASE = (process.env.REACT_APP_API_BASE || 'http://localhost:5080').replace(/\/+$/, '');
+ * and what their role allows before anything reaches the database.
+ * Where the API is:
+ *   - the built app: apiBase in config.js next to index.html - editable on the server
+ *   - otherwise (and as a fallback): REACT_APP_API_BASE in .env.development / .env.production */
+const runtimeBase = process.env.NODE_ENV === 'production' && typeof window !== 'undefined'
+  ? window.AIS_CONFIG?.apiBase : '';
+export const API_BASE = (runtimeBase || process.env.REACT_APP_API_BASE || 'http://localhost:5080').replace(/\/+$/, '');
 
 // The session lives in this browser tab only: closing the browser signs the person out.
 const TOKEN_KEY = 'ais-payroll.token';

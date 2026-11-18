@@ -3,8 +3,15 @@ import { execSQL, esc, num } from './api';
 const TABLE = 'dbo.payroll_leave';
 const SP    = 'dbo.payroll_leave_sp';
 
+// with the employee's name, so the list reads by person rather than by number
 export const fetchLeaves = () =>
-  execSQL(`SELECT * FROM ${TABLE} ORDER BY id DESC`);
+  execSQL(`
+    SELECT l.*,
+           LTRIM(RTRIM(ISNULL(e.initial,'') + ' ' + ISNULL(e.firstName,'') + ' ' + ISNULL(e.surName,''))) AS empName
+    FROM ${TABLE} l
+    LEFT JOIN dbo.payroll_employee e ON e.emp_id = l.emp_id
+    ORDER BY l.id DESC
+  `);
 
 export const createLeave = (d) =>
   execSQL(

@@ -149,7 +149,19 @@ app.Use(async (ctx, next) =>
 });
 app.UseRateLimiter();
 
-app.MapGet("/api/health", () => Results.Ok(new { ok = true, database = relay ? "relay" : "direct" })).AllowAnonymous();
+// after a deployment: is the API up, and can it reach the database? (no details are given out)
+app.MapGet("/api/health", async (IDb db, CancellationToken ct) =>
+{
+    var reachable = false;
+    try
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(TimeSpan.FromSeconds(10));
+        reachable = (await db.QueryAsync("SELECT 1 AS ok", cts.Token)).Count == 1;
+    }
+    catch (Exception ex) { app.Logger.LogWarning(ex, "Health check could not reach the database"); }
+    return Results.Ok(new { ok = reachable, api = true, database = relay ? "relay" : "direct", databaseReachable = reachable });
+}).AllowAnonymous().RequireRateLimiting("login");
 app.MapAuth();
 app.MapAdmin();
 app.MapData();

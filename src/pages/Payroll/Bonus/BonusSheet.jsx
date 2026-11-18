@@ -3,6 +3,7 @@ import Layout from "../../../components/Layout";
 import { StatusBadge } from "../../../components/StatusBadge";
 import { HiGift, HiSearch, HiCheck, HiRefresh, HiDownload, HiExclamation } from "react-icons/hi";
 import { CustomButton, CustomInput } from "../../../components/FormFields";
+import { sheetClasses as sheet } from "../../../ui/tableConfig";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { fetchActiveEmployees } from "../../../services/employeeService";
 import { fetchAllStructures } from "../../../services/salaryStructureService";
@@ -298,11 +299,11 @@ export default function BonusSheet() {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="table-viewport">
+          <div className={`table-viewport ${sheet.wrap}`}>
             <CustomTable hoverable>
               <CustomTableHead>
                 <CustomTableRow>
-                  <CustomTableHeadCell>Employee</CustomTableHeadCell>
+                  <CustomTableHeadCell className={sheet.pinHead}>Employee</CustomTableHeadCell>
                   <CustomTableHeadCell>Category</CustomTableHeadCell>
                   <CustomTableHeadCell>Basic Salary</CustomTableHeadCell>
                   <CustomTableHeadCell>Budgetary Allow.</CustomTableHeadCell>
@@ -325,8 +326,8 @@ export default function BonusSheet() {
                     No bonus sheet for {monthLabel(month)} yet — click <span className="font-semibold">Generate Sheet</span>.
                   </CustomTableCell></CustomTableRow>
                 ) : filtered.map((r) => (
-                  <CustomTableRow key={r.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                    <CustomTableCell>
+                  <CustomTableRow key={r.id} className={`${sheet.row} hover:bg-purple-50 dark:hover:bg-gray-700`}>
+                    <CustomTableCell className={sheet.pinCell}>
                       <p className="whitespace-nowrap text-sm font-medium text-gray-800 dark:text-gray-200">{r.empName}</p>
                       <p className="font-mono text-xs text-purple-500">{r.emp_id}</p>
                     </CustomTableCell>

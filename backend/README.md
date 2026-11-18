@@ -22,34 +22,40 @@ The React app reads `REACT_APP_API_BASE` from `.env.development`.
 
 ## Deploy to InterServer (IIS)
 
+API: `https://payroll-back.phvtech.com` · App: `https://payroll.phvtech.com`
+
 1. Publish:
 
    ```bash
    dotnet publish backend/PayrollApi -c Release -o backend/publish
    ```
 
-2. Create an IIS site (e.g. `payroll-api.phvtech.com`) pointing at the publish folder,
-   app pool **No Managed Code**, HTTPS binding. The ASP.NET Core 8 Hosting Bundle must be installed.
+2. IIS site `payroll-back.phvtech.com` pointing at the uploaded publish folder, app pool
+   **No Managed Code**, HTTPS binding. The ASP.NET Core 8 Hosting Bundle must be installed on the server.
 
-3. Set these as environment variables on the app pool (or in `web.config` `<environmentVariables>`,
-   or an `appsettings.Production.json` next to the dll - that file is git-ignored). Never commit them.
+3. `appsettings.Production.json` next to `PayrollApi.dll` holds the production settings
+   (template: `PayrollApi/appsettings.Production.example.json`). It is git-ignored and never
+   committed. Set the SQL connection string in it.
 
    | Setting | Value |
    |---|---|
-   | `Payroll__Jwt__Secret` | at least 32 random characters (e.g. `openssl rand -base64 48`) |
-   | `Payroll__Database__Mode` | `Direct` |
-   | `Payroll__Database__ConnectionString` | `Server=...;Database=...;User Id=...;Password=...;TrustServerCertificate=True` |
-   | `Payroll__Cors__AllowedOrigins__0` | the frontend origin, e.g. `https://payroll.phvtech.com` |
+   | `Jwt:Secret` | at least 32 random characters. Changing it signs everyone out |
+   | `Database:Mode` | `Direct` |
+   | `Database:ConnectionString` | `Server=...;Database=...;User Id=...;Password=...;TrustServerCertificate=True` |
+   | `Cors:AllowedOrigins` | `https://payroll.phvtech.com` (the app's address, exactly) |
 
-   The API refuses to start without a JWT secret (outside Development) or, in Direct mode,
-   without a connection string.
+   The same settings can be environment variables instead (`Payroll__Jwt__Secret`, ...).
+   The API refuses to start without a JWT secret or, in Direct mode, without a connection string.
+   Use a SQL login that can only reach the payroll database.
 
-   Use a SQL login that can only reach the payroll database. Changing the JWT secret signs everyone out.
+4. Check `https://payroll-back.phvtech.com/api/health`:
+   `{"ok":true,"database":"direct","databaseReachable":true}`. `databaseReachable:false` means the
+   connection string or SQL login is wrong. A 500.30/500.31 page means the API could not start:
+   set `stdoutLogEnabled="true"` in its `web.config` and read `logs\stdout*.log`.
 
-4. Check `https://<api-host>/api/health` returns `{"ok":true,"database":"direct"}`.
-
-5. Frontend: set `REACT_APP_API_BASE` in `.env.production` to the API host, then
-   `npm run build` and deploy `build/` as before.
+5. Front end: `npm run build`, upload `build/` with the site's own `web.config` as before.
+   The API address is in **`config.js`** next to `index.html`. Edit it on the server if the API
+   moves; no rebuild is needed. (`.env.production` is only the fallback.)
 
 ## Important: close the old door
 

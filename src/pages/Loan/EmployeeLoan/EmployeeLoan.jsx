@@ -5,7 +5,7 @@ import { Progress } from "flowbite-react";
 import { HiPlus, HiX, HiPencil, HiSearch } from "react-icons/hi";
 import EmployeeLoanForm from "./EmployeeLoanForm";
 import { fetchOpenPayrollMonth } from "../../../services/payrollRunService";
-import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
+import DataTable from "../../../ui/DataTable";
 import { CustomButton, CustomInput, CustomSelect } from "../../../components/FormFields";
 import {
   fetchLoans, createLoan, updateLoan, closeLoan,
@@ -118,6 +118,47 @@ export default function EmployeeLoan() {
     return acc;
   }, {})).sort((a, b) => b.monthly - a.monthly);
 
+  const rs = (v) => `Rs. ${Number(v || 0).toLocaleString()}`;
+  const columns = [
+    { key: "employee", label: "Employee", always: true, card: "title",
+      render: (l) => (
+        <div className="min-w-[11rem]">
+          <div className="font-medium text-gray-800 dark:text-gray-100">{l.empName || "—"}</div>
+          <div className="font-mono text-xs text-purple-600 dark:text-purple-400">EPF {l.emp_id}</div>
+        </div>
+      ) },
+    { key: "type", label: "Loan Type", card: "subtitle", render: (l) => l.loanType || "—" },
+    { key: "months", label: "Month(s)", card: true, render: (l) => loanMonths(l) || "—" },
+    { key: "principal", label: "Principal", align: "right", render: (l) => <span className="font-semibold">{rs(l.principal)}</span> },
+    { key: "interest", label: "Interest",
+      render: (l) => <StatusBadge color={Number(l.interestRate) === 0 ? "success" : "warning"} className="w-fit text-xs">{l.interestRate}%</StatusBadge> },
+    { key: "totalPayable", label: "Total Payable", align: "right", render: (l) => rs(l.totalPayable) },
+    { key: "installment", label: "Monthly", align: "right", card: true, render: (l) => rs(l.monthlyInstallment) },
+    { key: "monthlyInterest", label: "Monthly Interest", align: "right", render: (l) => rs(monthlyInterestOf(l)) },
+    { key: "progress", label: "Progress",
+      render: (l) => {
+        const st = standing[l.id];
+        const total = Number(l.totalPayable);
+        return (
+          <div className="min-w-[10rem]">
+            <Progress progress={st.paidPct} size="sm" color="purple" />
+            <p className="mt-1 text-xs text-gray-400">{st.paidPct}% paid · {rs(st.outstanding)} left</p>
+            {/* the payroll takes the monthly figure until the last installment -
+                more than the loan, and it keeps deducting after it is repaid */}
+            {st.state !== "Closed" && Number(l.installments) > 1 &&
+              Number(l.monthlyInstallment) * (Number(l.installments) - 1) > total && (
+              <p className="mt-0.5 text-xs font-semibold text-red-600"
+                title={`${l.installments} × ${rs(l.monthlyInstallment)} is more than the ${rs(total)} payable`}>
+                Installments exceed the loan — check
+              </p>
+            )}
+          </div>
+        );
+      } },
+    { key: "status", label: "Status", card: "badge",
+      render: (l) => { const st = standing[l.id].state; return <StatusBadge color={statusColor[st]} className="w-fit text-xs">{st}</StatusBadge>; } },
+  ];
+
   return (
     <Layout>
       <div className="flex flex-col gap-6">
@@ -165,106 +206,54 @@ export default function EmployeeLoan() {
           </div>
         )}
 
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-5 py-3 dark:border-gray-700">
-            <div className="w-full sm:w-72">
+        <DataTable
+          id="loans"
+          columns={columns}
+          rows={shown}
+          loading={loading}
+          empty={scope === "month" && !query && type === "all"
+            ? `Nothing is being recovered in ${inMonth ? monthLabel(inMonth) : "that month"}. Choose "All months" to see every loan.`
+            : query || type !== "all" || scope === "month" ? "No loan matches this search." : "No loans found."}
+          toolbar={(
+            <>
               <CustomInput icon={HiSearch} value={query} onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by EPF number or name…" />
-            </div>
-            <div className="w-full sm:w-64">
-              <CustomSelect value={type} onChange={(e) => setType(e.target.value)}>
+                placeholder="Search by EPF number or name…" sizing="sm" className="w-full sm:w-64" />
+              <CustomSelect value={type} onChange={(e) => setType(e.target.value)} sizing="sm">
                 <option value="all">All Loan Types</option>
                 {types.map((t) => <option key={t} value={t}>{t}</option>)}
               </CustomSelect>
-            </div>
-            <div className="w-52">
-              <CustomSelect value={scope} onChange={(e) => setScope(e.target.value)}>
+              <CustomSelect value={scope} onChange={(e) => setScope(e.target.value)} sizing="sm">
                 <option value="month">Recovering in…</option>
                 <option value="all">All months</option>
               </CustomSelect>
-            </div>
-            {scope === "month" && (
-              <input type="month" value={inMonth} onChange={(e) => { touchedMonth.current = true; setInMonth(e.target.value); }}
-                aria-label="Recovery month"
-                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200" />
-            )}
-            <span className="text-xs text-gray-400">{shown.length} of {loans.length}</span>
-          </div>
-          <div className="table-viewport">
-            <CustomTable hoverable>
-              <CustomTableHead>
-                <CustomTableRow>
-                  <CustomTableHeadCell>EPF No</CustomTableHeadCell>
-                  <CustomTableHeadCell>Employee</CustomTableHeadCell>
-                  <CustomTableHeadCell>Loan Type</CustomTableHeadCell>
-                  <CustomTableHeadCell>Month(s)</CustomTableHeadCell>
-                  <CustomTableHeadCell>Principal</CustomTableHeadCell>
-                  <CustomTableHeadCell>Interest</CustomTableHeadCell>
-                  <CustomTableHeadCell>Total Payable</CustomTableHeadCell>
-                  <CustomTableHeadCell>Monthly</CustomTableHeadCell>
-                  <CustomTableHeadCell>Monthly Interest</CustomTableHeadCell>
-                  <CustomTableHeadCell>Progress</CustomTableHeadCell>
-                  <CustomTableHeadCell>Status</CustomTableHeadCell>
-                  <CustomTableHeadCell className="text-center">Actions</CustomTableHeadCell>
-                </CustomTableRow>
-              </CustomTableHead>
-              <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {loading ? (
-                  <CustomTableRow><CustomTableCell colSpan={12} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
-                ) : shown.map((l) => {
-                  const total = Number(l.totalPayable);
-                  const st    = standing[l.id];
-                  return (
-                    <CustomTableRow key={l.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                      <CustomTableCell className="font-mono text-sm text-purple-500">{l.emp_id}</CustomTableCell>
-                      <CustomTableCell className="whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{l.empName}</CustomTableCell>
-                      <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{l.loanType}</CustomTableCell>
-                      <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{loanMonths(l) || "—"}</CustomTableCell>
-                      <CustomTableCell className="text-sm font-semibold text-gray-700 dark:text-gray-200">Rs. {Number(l.principal).toLocaleString()}</CustomTableCell>
-                      <CustomTableCell><StatusBadge color={Number(l.interestRate) === 0 ? "success" : "warning"} className="w-fit text-xs">{l.interestRate}%</StatusBadge></CustomTableCell>
-                      <CustomTableCell className="text-sm text-gray-700 dark:text-gray-200">Rs. {total.toLocaleString()}</CustomTableCell>
-                      <CustomTableCell className="text-sm text-gray-700 dark:text-gray-200">Rs. {Number(l.monthlyInstallment).toLocaleString()}</CustomTableCell>
-                      <CustomTableCell className="text-sm text-gray-700 dark:text-gray-200">Rs. {monthlyInterestOf(l).toLocaleString()}</CustomTableCell>
-                      <CustomTableCell className="min-w-[140px]">
-                        <Progress progress={st.paidPct} size="sm" color="purple" />
-                        <p className="mt-1 text-xs text-gray-400">{st.paidPct}% paid · Rs. {st.outstanding.toLocaleString()} left</p>
-                        {/* the payroll takes the monthly figure until the last installment -
-                            more than the loan, and it keeps deducting after it is repaid */}
-                        {st.state !== "Closed" && Number(l.installments) > 1 &&
-                          Number(l.monthlyInstallment) * (Number(l.installments) - 1) > total && (
-                          <p className="mt-0.5 text-xs font-semibold text-red-600"
-                            title={`${l.installments} × Rs. ${Number(l.monthlyInstallment).toLocaleString()} is more than the Rs. ${total.toLocaleString()} payable`}>
-                            Installments exceed the loan — check
-                          </p>
-                        )}
-                      </CustomTableCell>
-                      <CustomTableCell><StatusBadge color={statusColor[st.state]} className="w-fit text-xs">{st.state}</StatusBadge></CustomTableCell>
-                      <CustomTableCell>
-                        <div className="flex justify-center gap-2">
-                          {l.status === "Active" && (<>
-                            <CustomButton perm="loans.edit" size="xs" color="purple" outline pill title="Edit Loan" onClick={() => openEdit(l)}>
-                              <HiPencil className="h-3.5 w-3.5" />
-                            </CustomButton>
-                            <CustomButton perm="loans.close" size="xs" color="failure" outline pill title="Close Loan" onClick={() => handleClose(l.id)}>
-                              <HiX className="h-3.5 w-3.5" />
-                            </CustomButton>
-                          </>)}
-                        </div>
-                      </CustomTableCell>
-                    </CustomTableRow>
-                  );
-                })}
-                {!loading && shown.length === 0 && (
-                  <CustomTableRow><CustomTableCell colSpan={12} className="py-8 text-center text-sm text-gray-400">
-                    {scope === "month" && !query && type === "all"
-                      ? `Nothing is being recovered in ${inMonth ? monthLabel(inMonth) : "that month"}. Choose "All months" to see every loan.`
-                      : query || type !== "all" || scope === "month" ? "No loan matches this search." : "No loans found."}
-                  </CustomTableCell></CustomTableRow>
-                )}
-              </CustomTableBody>
-            </CustomTable>
-          </div>
-        </div>
+              {scope === "month" && (
+                <input type="month" value={inMonth} onChange={(e) => { touchedMonth.current = true; setInMonth(e.target.value); }}
+                  aria-label="Recovery month"
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200" />
+              )}
+            </>
+          )}
+          actions={(l, { inPanel } = {}) => (l.status === "Active" ? (
+            <>
+              <CustomButton perm="loans.edit" size="xs" color="purple" outline pill={!inPanel} title="Edit loan" onClick={() => openEdit(l)}>
+                <HiPencil className="h-3.5 w-3.5" />{inPanel && <span className="ml-1.5">Edit</span>}
+              </CustomButton>
+              <CustomButton perm="loans.close" size="xs" color="failure" outline pill={!inPanel} title="Close loan" onClick={() => handleClose(l.id)}>
+                <HiX className="h-3.5 w-3.5" />{inPanel && <span className="ml-1.5">Close loan</span>}
+              </CustomButton>
+            </>
+          ) : null)}
+          detail={{
+            title: (l) => l.empName || `EPF ${l.emp_id}`,
+            subtitle: (l) => `EPF ${l.emp_id} · ${l.loanType || "Loan"}`,
+          }}
+          footer={(
+            <span>
+              Showing <span className="font-semibold text-gray-700 dark:text-white">{shown.length}</span> of{" "}
+              <span className="font-semibold text-gray-700 dark:text-white">{loans.length}</span> loans
+            </span>
+          )}
+        />
       </div>
       {showForm && (
         <EmployeeLoanForm key={editing?.id ?? "new"} loan={editing}

@@ -4,7 +4,7 @@ import { HiPlus, HiPencil, HiTrash, HiSearch } from "react-icons/hi";
 import { displayName } from "../../Payroll/Payslip/Payslip";
 import EmployeeForm from "./EmployeeForm";
 import { CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
-import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
+import DataTable from "../../../ui/DataTable";
 import { fetchEmployees, createEmployee, updateEmployee, deleteEmployee, forgetEmployeeChoices } from "../../../services/employeeService";
 import { notify, confirmDialog } from "../../../ui/feedback";
 
@@ -112,148 +112,120 @@ export function EmployeeTable() {
     return matchSearch && matchCat && matchStatus;
   });
 
+  const money = (v) => Number(v || 0).toLocaleString();
+  const day = (v) => (v ? String(v).slice(0, 10) : "—");
+  const columns = [
+    { key: "employee", label: "Employee", always: true, card: "title",
+      render: (e) => (
+        <div className="min-w-[12rem]">
+          <div className="font-medium text-gray-800 dark:text-gray-100">{displayName(e)}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="font-mono text-purple-600 dark:text-purple-400">EPF {e.emp_id}</span>
+            {e.designation || e.title ? <> · {e.designation || e.title}</> : null}
+          </div>
+        </div>
+      ) },
+    { key: "initials", label: "Initials", render: (e) => <span className="font-mono">{e.initials || "—"}</span> },
+    { key: "nic", label: "NIC", render: (e) => e.nic || "—" },
+    { key: "category", label: "Category", card: "subtitle",
+      render: (e) => e.category ? <StatusBadge color={categoryColor[e.category] ?? "gray"}>{e.category}</StatusBadge> : "—" },
+    { key: "type", label: "Type",
+      render: (e) => e.employmentType ? <StatusBadge color={typeColor[e.employmentType] ?? "gray"}>{e.employmentType}</StatusBadge> : "—" },
+    { key: "basic", label: "Basic Salary", align: "right", card: true, render: (e) => money(e.basicSalary) },
+    { key: "budgetary", label: "Budgetary", align: "right", render: (e) => (Number(e.budgetaryAllowance) ? money(e.budgetaryAllowance) : "—") },
+    { key: "allowances", label: "Allowances", align: "right", render: (e) => (Number(e.fixedAllowance) ? money(e.fixedAllowance) : "—") },
+    { key: "total", label: "Total Package", align: "right", card: true,
+      render: (e) => <span className="font-semibold text-green-600 dark:text-green-400">{money(e.totalPackage)}</span> },
+    { key: "contact", label: "Contact No", render: (e) => e.contactNo || "—" },
+    { key: "epfEtf", label: "EPF/ETF",
+      render: (e) => <StatusBadge color={e.epfEtf ? "success" : "gray"}>{e.epfEtf ? "Eligible" : "N/A"}</StatusBadge> },
+    { key: "status", label: "Status", card: "badge",
+      render: (e) => { const st = displayStatus(e); return <StatusBadge color={statusColor[st] ?? "gray"}>{st}</StatusBadge>; } },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Employees</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage and organize your employee records</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Click anyone to see their full record</p>
         </div>
         <CustomButton perm="employees.edit" onClick={handleAdd} color="purple">
           <HiPlus className="mr-2 h-4 w-4" /> Add Employee
         </CustomButton>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <CustomInput icon={HiSearch} placeholder="Search by name or ID..." value={search}
-          onChange={(e) => setSearch(e.target.value)} sizing="sm" className="w-full sm:w-64" />
-        <CustomSelect value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} sizing="sm">
-          <option value="all">All Employees</option>
-          <option value="active">Active Only</option>
-          <option value="resigned">Resigned Only</option>
-        </CustomSelect>
-        <CustomSelect value={filterCat} onChange={(e) => setFilterCat(e.target.value)} sizing="sm">
-          <option value="all">All Categories</option>
-          <optgroup label="Main School — Academic">
-            <option value="Main - Upper School">Main — Upper School</option>
-            <option value="Main - Junior School">Main — Junior School</option>
-            <option value="Main - Elementary School">Main — Elementary School</option>
-          </optgroup>
-          <optgroup label="Main School">
-            <option value="Main - Non-Academic Staff">Main — Non-Academic Staff</option>
-            <option value="Main - Administrative Staff">Main — Administrative Staff</option>
-            <option value="Main - Support Staff">Main — Support Staff</option>
-          </optgroup>
-          <optgroup label="Battaramulla School">
-            <option value="Battaramulla - Academic Staff">Battaramulla — Academic Staff</option>
-            <option value="Battaramulla - Administrative Staff">Battaramulla — Administrative Staff</option>
-            <option value="Battaramulla - Support Staff">Battaramulla — Support Staff</option>
-          </optgroup>
-        </CustomSelect>
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="table-viewport">
-          <CustomTable hoverable>
-            <CustomTableHead>
-              <CustomTableRow>
-                <CustomTableHeadCell className="w-10">#</CustomTableHeadCell>
-                <CustomTableHeadCell>Emp ID</CustomTableHeadCell>
-                <CustomTableHeadCell>Full Name</CustomTableHeadCell>
-                <CustomTableHeadCell>Initials</CustomTableHeadCell>
-                <CustomTableHeadCell>NIC</CustomTableHeadCell>
-                <CustomTableHeadCell>Category</CustomTableHeadCell>
-                <CustomTableHeadCell>Type</CustomTableHeadCell>
-                <CustomTableHeadCell>Basic Salary</CustomTableHeadCell>
-                <CustomTableHeadCell>Budgetary</CustomTableHeadCell>
-                <CustomTableHeadCell>Allowances</CustomTableHeadCell>
-                <CustomTableHeadCell>Total Package</CustomTableHeadCell>
-                <CustomTableHeadCell>Contact No</CustomTableHeadCell>
-                <CustomTableHeadCell>EPF/ETF</CustomTableHeadCell>
-                <CustomTableHeadCell>Status</CustomTableHeadCell>
-                <CustomTableHeadCell className="text-center">Actions</CustomTableHeadCell>
-              </CustomTableRow>
-            </CustomTableHead>
-            <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {loading ? (
-                <CustomTableRow>
-                  <CustomTableCell colSpan={15} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell>
-                </CustomTableRow>
-              ) : filtered.map((emp, idx) => (
-                <CustomTableRow key={emp.id}
-                  className="bg-white transition-colors hover:bg-purple-50 dark:bg-gray-800 dark:hover:bg-gray-700">
-                  <CustomTableCell className="text-sm text-gray-400">{idx + 1}</CustomTableCell>
-                  <CustomTableCell className="font-mono text-sm font-medium text-purple-600 dark:text-purple-400">{emp.emp_id}</CustomTableCell>
-                  <CustomTableCell className="whitespace-nowrap text-sm font-medium text-gray-800 dark:text-gray-200">
-                    {displayName(emp)}
-                  </CustomTableCell>
-                  <CustomTableCell className="font-mono text-sm text-gray-500">{emp.initials || "—"}</CustomTableCell>
-                  <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">{emp.nic}</CustomTableCell>
-                  <CustomTableCell>
-                    <StatusBadge color={categoryColor[emp.category] ?? "gray"} className="w-fit text-xs">{emp.category}</StatusBadge>
-                  </CustomTableCell>
-                  <CustomTableCell>
-                    <StatusBadge color={typeColor[emp.employmentType] ?? "gray"} className="w-fit text-xs">{emp.employmentType}</StatusBadge>
-                  </CustomTableCell>
-                  <CustomTableCell className="whitespace-nowrap text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    {Number(emp.basicSalary || 0).toLocaleString()}
-                  </CustomTableCell>
-                  <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                    {Number(emp.budgetaryAllowance) ? Number(emp.budgetaryAllowance).toLocaleString() : "—"}
-                  </CustomTableCell>
-                  <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                    {Number(emp.fixedAllowance) ? Number(emp.fixedAllowance).toLocaleString() : "—"}
-                  </CustomTableCell>
-                  <CustomTableCell className="whitespace-nowrap text-sm font-bold text-green-600">
-                    Rs. {Number(emp.totalPackage || 0).toLocaleString()}
-                  </CustomTableCell>
-                  <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                    {emp.contactNo || "—"}
-                  </CustomTableCell>
-                  <CustomTableCell>
-                    <StatusBadge color={emp.epfEtf ? "success" : "gray"} className="w-fit text-xs">
-                      {emp.epfEtf ? "Eligible" : "N/A"}
-                    </StatusBadge>
-                  </CustomTableCell>
-                  <CustomTableCell>
-                    {(() => {
-                      const st = displayStatus(emp);
-                      return (
-                        <StatusBadge color={statusColor[st] ?? "gray"} className="w-fit text-xs">
-                          {st}
-                        </StatusBadge>
-                      );
-                    })()}
-                  </CustomTableCell>
-                  <CustomTableCell>
-                    <div className="flex items-center justify-center gap-2">
-                      <CustomButton perm="employees.edit" size="xs" color="blue" outline pill onClick={() => handleEdit(emp)}>
-                        <HiPencil className="h-3.5 w-3.5" />
-                      </CustomButton>
-                      <CustomButton perm="employees.delete" size="xs" color="failure" outline pill onClick={() => handleDelete(emp.id)}>
-                        <HiTrash className="h-3.5 w-3.5" />
-                      </CustomButton>
-                    </div>
-                  </CustomTableCell>
-                </CustomTableRow>
-              ))}
-              {!loading && filtered.length === 0 && (
-                <CustomTableRow>
-                  <CustomTableCell colSpan={15} className="py-8 text-center text-sm text-gray-400">No employees found.</CustomTableCell>
-                </CustomTableRow>
-              )}
-            </CustomTableBody>
-          </CustomTable>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-5 py-3 dark:border-gray-700">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+      <DataTable
+        id="employees"
+        columns={columns}
+        rows={filtered}
+        loading={loading}
+        empty={employees.length ? "No one matches these filters." : "No employees yet."}
+        toolbar={(
+          <>
+            <CustomInput icon={HiSearch} placeholder="Search by name or EPF no." value={search}
+              onChange={(e) => setSearch(e.target.value)} sizing="sm" className="w-full sm:w-64" />
+            <CustomSelect value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} sizing="sm">
+              <option value="all">All Employees</option>
+              <option value="active">Active Only</option>
+              <option value="resigned">Resigned Only</option>
+            </CustomSelect>
+            <CustomSelect value={filterCat} onChange={(e) => setFilterCat(e.target.value)} sizing="sm">
+              <option value="all">All Categories</option>
+              <optgroup label="Main School — Academic">
+                <option value="Main - Upper School">Main — Upper School</option>
+                <option value="Main - Junior School">Main — Junior School</option>
+                <option value="Main - Elementary School">Main — Elementary School</option>
+              </optgroup>
+              <optgroup label="Main School">
+                <option value="Main - Non-Academic Staff">Main — Non-Academic Staff</option>
+                <option value="Main - Administrative Staff">Main — Administrative Staff</option>
+                <option value="Main - Support Staff">Main — Support Staff</option>
+              </optgroup>
+              <optgroup label="Battaramulla School">
+                <option value="Battaramulla - Academic Staff">Battaramulla — Academic Staff</option>
+                <option value="Battaramulla - Administrative Staff">Battaramulla — Administrative Staff</option>
+                <option value="Battaramulla - Support Staff">Battaramulla — Support Staff</option>
+              </optgroup>
+            </CustomSelect>
+          </>
+        )}
+        actions={(emp, { inPanel } = {}) => (
+          <>
+            <CustomButton perm="employees.edit" size="xs" color="blue" outline pill={!inPanel} onClick={() => handleEdit(emp)}
+              title="Edit">
+              <HiPencil className="h-3.5 w-3.5" />{inPanel && <span className="ml-1.5">Edit</span>}
+            </CustomButton>
+            <CustomButton perm="employees.delete" size="xs" color="failure" outline pill={!inPanel} onClick={() => handleDelete(emp.id)}
+              title="Delete">
+              <HiTrash className="h-3.5 w-3.5" />{inPanel && <span className="ml-1.5">Delete</span>}
+            </CustomButton>
+          </>
+        )}
+        detail={{
+          title: (e) => displayName(e),
+          subtitle: (e) => `EPF ${e.emp_id}${e.designation || e.title ? ` · ${e.designation || e.title}` : ""}`,
+          extra: [
+            { label: "Date joined", render: (e) => day(e.dateOfJoining) },
+            { label: "Date of birth", render: (e) => day(e.dob) },
+            { label: "Resignation date", render: (e) => day(e.dateOfResignation) },
+            { label: "Contract", render: (e) => (e.contractStartDate || e.contractEndDate ? `${day(e.contractStartDate)} to ${day(e.contractEndDate)}` : "—") },
+            { label: "Payment mode", render: (e) => e.paymentMode || "Bank" },
+            { label: "Bank", render: (e) => [e.bank, e.branch].filter(Boolean).join(", ") || "—" },
+            { label: "Account no.", render: (e) => e.accountNum || "—" },
+            { label: "TIN", render: (e) => e.tin || "—" },
+            { label: "Emergency contact", render: (e) => e.emergencyContactNo || "—" },
+            { label: "Address", render: (e) => e.address || "—" },
+          ],
+        }}
+        footer={(
+          <span>
             Showing <span className="font-semibold text-gray-700 dark:text-white">{filtered.length}</span> of{" "}
             <span className="font-semibold text-gray-700 dark:text-white">{employees.length}</span> employees
           </span>
-          <span className="text-xs text-gray-400">Employee Management</span>
-        </div>
-      </div>
+        )}
+      />
 
       {openModal && (
         <EmployeeForm

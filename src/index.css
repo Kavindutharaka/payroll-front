@@ -65,3 +65,21 @@ code {
 .skeleton { border-radius: .375rem; background: linear-gradient(90deg, rgb(243 244 246) 0, rgb(229 231 235) 50%, rgb(243 244 246) 100%); background-size: 200px 100%; background-repeat: no-repeat; background-color: rgb(243 244 246); animation: sk 1.2s ease-in-out infinite; }
 @media (prefers-color-scheme: dark) { .skeleton { background-image: linear-gradient(90deg, rgb(55 65 81) 0, rgb(75 85 99) 50%, rgb(55 65 81) 100%); background-color: rgb(55 65 81); } }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+/* Pinned columns: a soft edge shows there is more to scroll to */
+.pin-edge-r { box-shadow: inset -1px 0 0 rgb(229 231 235), 4px 0 6px -4px rgb(0 0 0 / .12); }
+.pin-edge-l { box-shadow: inset 1px 0 0 rgb(229 231 235), -4px 0 6px -4px rgb(0 0 0 / .12); }
+@media (prefers-color-scheme: dark) {
+  .pin-edge-r { box-shadow: inset -1px 0 0 rgb(55 65 81), 4px 0 6px -4px rgb(0 0 0 / .5); }
+  .pin-edge-l { box-shadow: inset 1px 0 0 rgb(55 65 81), -4px 0 6px -4px rgb(0 0 0 / .5); }
+}
+/* Record panel slides in from the right */
+@keyframes panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.panel-in { animation: panel-in .2s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .panel-in { animation: none; } }
+/* The page itself never scrolls sideways - wide tables scroll inside their own box */
+body { overflow-x: clip; }
+
+/* the editable sheets in compact mode (ui/tableConfig.js SHEETS.compact) */
+.sheet-compact th { padding: 0.625rem 0.75rem; }
+.sheet-compact td:not([colspan]) { padding: 0.5rem 0.75rem; }

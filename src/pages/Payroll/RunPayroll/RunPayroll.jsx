@@ -3,6 +3,7 @@ import { StatusBadge } from "../../../components/StatusBadge";
 import Layout from "../../../components/Layout";
 import { HiPlay, HiRefresh, HiLockClosed, HiCheck, HiExclamation, HiDownload, HiUpload, HiSearch } from "react-icons/hi";
 import { CustomSelect, CustomButton, CustomInput } from "../../../components/FormFields";
+import { sheetClasses as sheet } from "../../../ui/tableConfig";
 import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
 import { fetchActiveEmployees } from "../../../services/employeeService";
 import { fetchAllStructures, componentPaysIn } from "../../../services/salaryStructureService";
@@ -735,11 +736,11 @@ export default function RunPayroll() {
               </span>
             )}
           </div>
-          <div className="table-viewport">
+          <div className={`table-viewport ${sheet.wrap}`}>
             <CustomTable hoverable className="text-sm">
               <CustomTableHead>
                 <CustomTableRow>
-                  <CustomTableHeadCell className="sticky left-0 z-20 bg-gray-50 shadow-[2px_0_4px_-2px_rgba(0,0,0,.25)] dark:bg-gray-700">
+                  <CustomTableHeadCell className={sheet.pinHead}>
                     Employee
                   </CustomTableHeadCell>
                   <CustomTableHeadCell>Basic</CustomTableHeadCell>
@@ -778,8 +779,8 @@ export default function RunPayroll() {
                     </CustomTableCell>
                   </CustomTableRow>
                 ) : visible.map((r) => (
-                  <CustomTableRow key={r.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                    <CustomTableCell className="sticky left-0 z-10 bg-white shadow-[2px_0_4px_-2px_rgba(0,0,0,.25)] dark:bg-gray-800">
+                  <CustomTableRow key={r.id} className={`${sheet.row} hover:bg-purple-50 dark:hover:bg-gray-700`}>
+                    <CustomTableCell className={sheet.pinCell}>
                       <p className="whitespace-nowrap text-sm font-medium text-gray-800 dark:text-gray-200">{displayName(r)}</p>
                       <div className="mt-0.5 flex flex-wrap gap-1">
                         <StatusBadge color="indigo" className="text-xs">{r.emp_id}</StatusBadge>

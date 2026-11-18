@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import Layout from "../../components/Layout";
-import { HiUpload, HiSearch, HiExternalLink, HiTrash, HiFolderOpen, HiExclamation } from "react-icons/hi";
+import { HiUpload, HiSearch, HiExternalLink, HiFolderOpen, HiExclamation } from "react-icons/hi";
 import { CustomButton, CustomInput, CustomSelect, CustomLabel } from "../../components/FormFields";
-import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../components/CustomTable";
+import DataTable, { RowActions } from "../../ui/DataTable";
 import { useCan } from "../../auth/AuthContext";
 import { notify, confirmDialog } from "../../ui/feedback";
 import { fetchDocuments, uploadDocument, hideDocument, openDocument, MAX_BYTES } from "../../services/documentService";
@@ -95,6 +95,21 @@ export default function Documents() {
       .filter((d) => !q || `${d.title} ${d.fileName} ${d.notes || ""} ${monthLabel(d.periodMonth)}`.toLowerCase().includes(q));
   }, [docs, query, cat]);
 
+  const columns = [
+    { key: "title", label: "Title", always: true, card: "title",
+      render: (d) => (
+        <div className="max-w-[22rem]">
+          <div className="truncate font-medium text-gray-800 dark:text-gray-100">{d.title}</div>
+          {d.notes && <div className="truncate text-xs text-gray-400">{d.notes}</div>}
+        </div>
+      ) },
+    { key: "month", label: "Month", card: "subtitle", render: (d) => monthLabel(d.periodMonth) },
+    { key: "kind", label: "Kind", card: true, render: (d) => d.category || "—" },
+    { key: "file", label: "File", card: true,
+      render: (d) => <>{d.fileName}<span className="ml-1 text-xs text-gray-400">({size(d.sizeBytes)})</span></> },
+    { key: "stored", label: "Stored", render: (d) => <span className="text-xs text-gray-500">{d.uploadedAt}</span> },
+  ];
+
   return (
     <Layout>
       <div className="flex flex-col gap-6">
@@ -150,70 +165,45 @@ export default function Documents() {
           </div>
         </form>}
 
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-5 py-3 dark:border-gray-700">
-            <div className="w-72">
-              <CustomInput icon={HiSearch} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search title, file or month…" />
-            </div>
-            <div className="w-52">
-              <CustomSelect value={cat} onChange={(e) => setCat(e.target.value)}>
+        <DataTable
+          id="documents"
+          columns={columns}
+          rows={shown}
+          loading={loading}
+          empty={(
+            <span className="flex flex-col items-center">
+              <HiFolderOpen className="mb-2 h-8 w-8" />
+              {docs.length ? "No file matches this search." : "No files stored yet — choose a file above and click Store File."}
+            </span>
+          )}
+          toolbar={(
+            <>
+              <CustomInput icon={HiSearch} value={query} onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search title, file or month…" sizing="sm" className="w-full sm:w-72" />
+              <CustomSelect value={cat} onChange={(e) => setCat(e.target.value)} sizing="sm">
                 <option value="all">All kinds</option>
                 {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </CustomSelect>
-            </div>
-            <span className="text-xs text-gray-400">{shown.length} of {docs.length}</span>
-          </div>
-          <div className="table-viewport">
-            <CustomTable hoverable>
-              <CustomTableHead>
-                <CustomTableRow>
-                  <CustomTableHeadCell>Month</CustomTableHeadCell>
-                  <CustomTableHeadCell>Title</CustomTableHeadCell>
-                  <CustomTableHeadCell>Kind</CustomTableHeadCell>
-                  <CustomTableHeadCell>File</CustomTableHeadCell>
-                  <CustomTableHeadCell>Stored</CustomTableHeadCell>
-                  <CustomTableHeadCell className="text-center">Actions</CustomTableHeadCell>
-                </CustomTableRow>
-              </CustomTableHead>
-              <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {loading ? (
-                  <CustomTableRow><CustomTableCell colSpan={6} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
-                ) : shown.length === 0 ? (
-                  <CustomTableRow><CustomTableCell colSpan={6} className="py-10 text-center text-sm text-gray-400">
-                    <HiFolderOpen className="mx-auto mb-2 h-8 w-8" />
-                    {docs.length ? "No file matches this search." : "No files stored yet — choose a file above and click Store File."}
-                  </CustomTableCell></CustomTableRow>
-                ) : shown.map((d) => (
-                  <CustomTableRow key={d.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                    <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{monthLabel(d.periodMonth)}</CustomTableCell>
-                    <CustomTableCell className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                      {d.title}
-                      {d.notes && <p className="text-xs font-normal text-gray-400">{d.notes}</p>}
-                    </CustomTableCell>
-                    <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{d.category || "—"}</CustomTableCell>
-                    <CustomTableCell className="text-sm text-gray-600 dark:text-gray-300">
-                      {d.fileName}<span className="ml-1 text-xs text-gray-400">({size(d.sizeBytes)})</span>
-                    </CustomTableCell>
-                    <CustomTableCell className="whitespace-nowrap text-xs text-gray-500">{d.uploadedAt}</CustomTableCell>
-                    <CustomTableCell>
-                      <div className="flex justify-center gap-2">
-                        {/* Excel files open in Excel; a PDF opens in the browser */}
-                        <button type="button" onClick={() => open(d)} disabled={opening === d.id}
-                          title="Open / download"
-                          className="inline-flex items-center rounded-full border border-purple-400 px-2.5 py-1 text-xs font-medium text-purple-600 hover:bg-purple-50 disabled:opacity-60 dark:text-purple-300">
-                          <HiExternalLink className="mr-1 h-3.5 w-3.5" /> {opening === d.id ? "Opening…" : "Open"}
-                        </button>
-                        <CustomButton perm="documents.remove" size="xs" color="failure" outline pill title="Remove from the list" onClick={() => remove(d)}>
-                          <HiTrash className="h-3.5 w-3.5" />
-                        </CustomButton>
-                      </div>
-                    </CustomTableCell>
-                  </CustomTableRow>
-                ))}
-              </CustomTableBody>
-            </CustomTable>
-          </div>
-        </div>
+            </>
+          )}
+          actions={(d, { inPanel } = {}) => (
+            <RowActions inPanel={inPanel} deletePerm="documents.remove" onDelete={() => remove(d)}
+              extra={(
+                // Excel files open in Excel; a PDF opens in the browser
+                <button type="button" onClick={() => open(d)} disabled={opening === d.id}
+                  title="Open / download"
+                  className="inline-flex items-center rounded-full border border-purple-400 px-2.5 py-1 text-xs font-medium text-purple-600 hover:bg-purple-50 disabled:opacity-60 dark:text-purple-300">
+                  <HiExternalLink className="mr-1 h-3.5 w-3.5" /> {opening === d.id ? "Opening…" : "Open"}
+                </button>
+              )} />
+          )}
+          detail={{
+            title: (d) => d.title,
+            subtitle: (d) => monthLabel(d.periodMonth),
+            extra: [{ label: "Notes", render: (d) => d.notes || "—" }],
+          }}
+          footer={<span>Showing <span className="font-semibold text-gray-700 dark:text-white">{shown.length}</span> of <span className="font-semibold text-gray-700 dark:text-white">{docs.length}</span> files</span>}
+        />
       </div>
     </Layout>
   );

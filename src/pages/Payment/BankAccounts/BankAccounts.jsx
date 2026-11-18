@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { StatusBadge } from "../../../components/StatusBadge";
 import Layout from "../../../components/Layout";
-import { HiPlus, HiPencil, HiTrash, HiSearch } from "react-icons/hi";
+import { HiPlus, HiSearch } from "react-icons/hi";
 import BankAccountForm from "./BankAccountForm";
 import { CustomInput, CustomSelect, CustomButton } from "../../../components/FormFields";
-import { CustomTable, CustomTableHead, CustomTableBody, CustomTableHeadCell, CustomTableRow, CustomTableCell } from "../../../components/CustomTable";
+import DataTable, { RowActions } from "../../../ui/DataTable";
 import { fetchBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount } from "../../../services/bankAccountService";
 import { notify, confirmDialog } from "../../../ui/feedback";
 
@@ -18,7 +18,7 @@ export default function BankAccounts() {
 
   const load = async () => {
     setLoading(true);
-    try { setAccounts(Array.isArray(await fetchBankAccounts()) ? await fetchBankAccounts() : []); }
+    try { const data = await fetchBankAccounts(); setAccounts(Array.isArray(data) ? data : []); }
     catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -50,6 +50,26 @@ export default function BankAccounts() {
     return matchSearch && matchEmp;
   });
 
+  const columns = [
+    { key: "employee", label: "Employee", always: true, card: "title",
+      render: (b) => (
+        <div className="min-w-[11rem]">
+          <div className="font-medium text-gray-800 dark:text-gray-100">{b.empName || "—"}</div>
+          <div className="font-mono text-xs text-purple-600 dark:text-purple-400">EPF {b.emp_id}</div>
+        </div>
+      ) },
+    { key: "accountName", label: "Account Name", render: (b) => b.accountName || "—" },
+    { key: "accountNo", label: "Account No.", card: true, render: (b) => <span className="font-mono">{b.accountNum || "—"}</span> },
+    { key: "bank", label: "Bank", card: "subtitle", render: (b) => b.bank || "—" },
+    { key: "branch", label: "Branch", render: (b) => b.branch || "—" },
+    { key: "codes", label: "Bank / Branch Code",
+      render: (b) => <span className="font-mono text-xs text-gray-500">{b.bankCode || "—"} / {b.branchCode || "—"}</span> },
+    { key: "split", label: "Split", align: "right", card: true,
+      render: (b) => (b.splitType === "Percentage" ? `${b.splitValue}%` : `Rs. ${Number(b.splitValue || 0).toLocaleString()}`) },
+    { key: "status", label: "Default", card: "badge",
+      render: (b) => <StatusBadge color={b.isDefault ? "success" : "gray"} className="w-fit text-xs">{b.isDefault ? "Default" : "Secondary"}</StatusBadge> },
+  ];
+
   return (
     <Layout>
       <div className="flex flex-col gap-6">
@@ -62,73 +82,37 @@ export default function BankAccounts() {
             <HiPlus className="mr-2 h-4 w-4" /> Add Account
           </CustomButton>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <CustomInput icon={HiSearch} placeholder="Search by emp ID or account..." sizing="sm" className="w-full sm:w-64"
-            value={search} onChange={(e) => setSearch(e.target.value)} />
-          <CustomSelect sizing="sm" value={filterEmp} onChange={(e) => setFilterEmp(e.target.value)}>
-            <option value="all">All Employees</option>
-            {empIds.map((id) => <option key={id} value={id}>{id}</option>)}
-          </CustomSelect>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="table-viewport">
-            <CustomTable hoverable>
-              <CustomTableHead>
-                <CustomTableRow>
-                  <CustomTableHeadCell>Employee</CustomTableHeadCell>
-                  <CustomTableHeadCell>Account Name</CustomTableHeadCell>
-                  <CustomTableHeadCell>Account No.</CustomTableHeadCell>
-                  <CustomTableHeadCell>Bank</CustomTableHeadCell>
-                  <CustomTableHeadCell>Branch</CustomTableHeadCell>
-                  <CustomTableHeadCell>Codes</CustomTableHeadCell>
-                  <CustomTableHeadCell>Split</CustomTableHeadCell>
-                  <CustomTableHeadCell>Default</CustomTableHeadCell>
-                  <CustomTableHeadCell className="text-center">Actions</CustomTableHeadCell>
-                </CustomTableRow>
-              </CustomTableHead>
-              <CustomTableBody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {loading ? (
-                  <CustomTableRow><CustomTableCell colSpan={8} className="py-8 text-center text-sm text-gray-400">Loading…</CustomTableCell></CustomTableRow>
-                ) : filtered.map((b) => (
-                  <CustomTableRow key={b.id} className="hover:bg-purple-50 dark:hover:bg-gray-700">
-                    <CustomTableCell>
-                      <p className="whitespace-nowrap text-sm font-medium text-gray-800 dark:text-gray-200">{b.empName}</p>
-                      <p className="font-mono text-xs text-purple-500">{b.emp_id}</p>
-                    </CustomTableCell>
-                    <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{b.accountName || "—"}</CustomTableCell>
-                    <CustomTableCell className="font-mono text-sm text-gray-700 dark:text-gray-200">{b.accountNum}</CustomTableCell>
-                    <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{b.bank}</CustomTableCell>
-                    <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{b.branch}</CustomTableCell>
-                    <CustomTableCell className="whitespace-nowrap font-mono text-xs text-gray-500">
-                      {b.bankCode || "—"} / {b.branchCode || "—"}
-                    </CustomTableCell>
-                    <CustomTableCell className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                      {b.splitValue}{b.splitType === "Percentage" ? "%" : " Rs."}
-                    </CustomTableCell>
-                    <CustomTableCell>
-                      <StatusBadge color={b.isDefault ? "success" : "gray"} className="w-fit text-xs">
-                        {b.isDefault ? "Default" : "Secondary"}
-                      </StatusBadge>
-                    </CustomTableCell>
-                    <CustomTableCell>
-                      <div className="flex justify-center gap-2">
-                        <CustomButton perm="payment.edit" size="xs" color="blue" outline pill onClick={() => { setEditData(b); setShowForm(true); }}>
-                          <HiPencil className="h-3.5 w-3.5" />
-                        </CustomButton>
-                        <CustomButton perm="payment.delete" size="xs" color="failure" outline pill onClick={() => handleDelete(b.id)}>
-                          <HiTrash className="h-3.5 w-3.5" />
-                        </CustomButton>
-                      </div>
-                    </CustomTableCell>
-                  </CustomTableRow>
-                ))}
-                {!loading && filtered.length === 0 && (
-                  <CustomTableRow><CustomTableCell colSpan={8} className="py-8 text-center text-sm text-gray-400">No bank accounts found.</CustomTableCell></CustomTableRow>
-                )}
-              </CustomTableBody>
-            </CustomTable>
-          </div>
-        </div>
+        <DataTable
+          id="bankAccounts"
+          columns={columns}
+          rows={filtered}
+          loading={loading}
+          empty={accounts.length ? "No account matches this search." : "No bank accounts yet."}
+          toolbar={(
+            <>
+              <CustomInput icon={HiSearch} placeholder="Search by name, EPF no., bank or account" sizing="sm" className="w-full sm:w-72"
+                value={search} onChange={(e) => setSearch(e.target.value)} />
+              <CustomSelect sizing="sm" value={filterEmp} onChange={(e) => setFilterEmp(e.target.value)}>
+                <option value="all">All Employees</option>
+                {empIds.map((id) => <option key={id} value={id}>{id}</option>)}
+              </CustomSelect>
+            </>
+          )}
+          actions={(b, { inPanel } = {}) => (
+            <RowActions inPanel={inPanel} editPerm="payment.edit" deletePerm="payment.delete"
+              onEdit={() => { setEditData(b); setShowForm(true); }} onDelete={() => handleDelete(b.id)} />
+          )}
+          detail={{
+            title: (b) => b.empName || b.emp_id,
+            subtitle: (b) => `EPF ${b.emp_id}`,
+          }}
+          footer={(
+            <span>
+              Showing <span className="font-semibold text-gray-700 dark:text-white">{filtered.length}</span> of{" "}
+              <span className="font-semibold text-gray-700 dark:text-white">{accounts.length}</span> accounts
+            </span>
+          )}
+        />
       </div>
       {showForm && <BankAccountForm closeForm={() => { setShowForm(false); setEditData(null); }} initialData={editData} onSave={handleSave} />}
     </Layout>
